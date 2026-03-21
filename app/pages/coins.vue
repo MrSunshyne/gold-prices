@@ -33,11 +33,11 @@ const coinChartData = computed(() => {
   return { data: prices, minVal, maxVal }
 })
 
-const chartWidth = 900
-const chartHeight = 300
+const chartWidth = 1000
+const chartHeight = 360
 const padLeft = 90
 const padRight = 24
-const padTop = 24
+const padTop = 40
 const padBottom = 40
 
 function xScale(i: number, total: number): number {
@@ -100,35 +100,44 @@ const yTicks = computed(() => {
 
 <template>
   <main class="page">
-    <section class="hero">
-      <h2>Dodo Gold Coins</h2>
-      <p class="hero-sub">Official gold coins issued by the Bank of Mauritius, available in four denominations.</p>
-    </section>
+    <div class="hero-section">
+      <div class="meta-info">
+        <span>Updated {{ formatDate(currentCoins.date) }}</span>
+        <span class="divider"></span>
+        <span>Bank of Mauritius</span>
+      </div>
+      <h2 class="main-title">Dodo Gold Coins</h2>
+    </div>
 
-    <!-- Current Coin Prices -->
-    <section class="coins-grid">
-      <div
-        v-for="d in denominations"
-        :key="d.denomination"
-        class="coin-card"
-        :class="{ active: activeDenom === d.denomination }"
-        @click="selectedDenom = d.denomination"
-      >
-        <div class="coin-denom">Rs {{ d.denomination }}</div>
-        <div class="coin-price">{{ formatPrice(d.price) }}</div>
-        <div class="coin-specs">
-          <span>{{ d.weight_gm }}g</span>
-          <span>{{ d.diameter_mm }}mm</span>
-        </div>
+    <section class="coins-grid-section">
+      <h3 class="section-heading">Select Denomination</h3>
+      <div class="coins-grid">
+        <button
+          v-for="d in denominations"
+          :key="d.denomination"
+          class="coin-switcher"
+          :class="{ active: activeDenom === d.denomination }"
+          @click="selectedDenom = d.denomination"
+        >
+          <div class="coin-icon">
+            <div class="coin-inner">Rs {{ d.denomination }}</div>
+          </div>
+          <div class="coin-details">
+            <div class="coin-price">{{ formatPrice(d.price) }}</div>
+            <div class="coin-specs">
+              <span>{{ d.weight_gm }}g</span>
+              <span class="dot">&bull;</span>
+              <span>{{ d.diameter_mm }}mm</span>
+            </div>
+          </div>
+        </button>
       </div>
     </section>
 
-    <div class="coin-date">Prices as of {{ formatDate(currentCoins.date) }} ({{ timeAgo(currentCoins.date) }})</div>
-
-    <!-- Coin Price Chart -->
     <section class="chart-section">
-      <h3>Rs {{ activeDenom }} Coin — Price History</h3>
-      <div class="chart-container">
+      <h3 class="section-heading">Price History — Rs {{ activeDenom }} Coin</h3>
+      
+      <div class="chart-wrapper">
         <svg
           v-if="coinChartData.data.length >= 2"
           :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
@@ -136,6 +145,7 @@ const yTicks = computed(() => {
           @mousemove="onChartHover"
           @mouseleave="onChartLeave"
         >
+          <!-- Horizontal Grid Lines -->
           <line
             v-for="tick in yTicks"
             :key="tick"
@@ -143,14 +153,16 @@ const yTicks = computed(() => {
             :y1="yScale(tick, coinChartData.minVal, coinChartData.maxVal)"
             :x2="chartWidth - padRight"
             :y2="yScale(tick, coinChartData.minVal, coinChartData.maxVal)"
-            stroke="var(--row-border)"
+            stroke="var(--border)"
             stroke-width="1"
+            stroke-dasharray="2 6"
           />
 
+          <!-- Y-axis labels -->
           <text
             v-for="tick in yTicks"
             :key="'label-' + tick"
-            :x="padLeft - 8"
+            :x="padLeft - 16"
             :y="yScale(tick, coinChartData.minVal, coinChartData.maxVal) + 4"
             text-anchor="end"
             class="chart-label"
@@ -158,68 +170,62 @@ const yTicks = computed(() => {
             {{ tick.toLocaleString() }}
           </text>
 
+          <!-- Line -->
           <path
             :d="coinPath"
             fill="none"
             stroke="var(--gold-color)"
             stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
           />
 
-          <template v-if="hoverIndex !== null && coinChartData.data[hoverIndex]">
+          <!-- Hover Indicator -->
+          <g v-if="hoverIndex !== null && coinChartData.data[hoverIndex]" class="hover-group">
             <line
               :x1="xScale(hoverIndex, coinChartData.data.length)"
               :y1="padTop"
               :x2="xScale(hoverIndex, coinChartData.data.length)"
               :y2="chartHeight - padBottom"
-              stroke="var(--text-muted)"
+              stroke="var(--gold-accent)"
               stroke-width="1"
-              stroke-dasharray="4 2"
+              stroke-dasharray="4 4"
             />
             <circle
               :cx="xScale(hoverIndex, coinChartData.data.length)"
               :cy="yScale(coinChartData.data[hoverIndex].price, coinChartData.minVal, coinChartData.maxVal)"
-              r="4"
-              fill="var(--gold-color)"
-              stroke="var(--bg)"
+              r="5"
+              fill="var(--bg)"
+              stroke="var(--gold-color)"
               stroke-width="2"
             />
-            <rect
-              :x="xScale(hoverIndex, coinChartData.data.length) - 80"
-              :y="yScale(coinChartData.data[hoverIndex].price, coinChartData.minVal, coinChartData.maxVal) - 36"
-              width="160"
-              height="28"
-              fill="var(--surface)"
-              stroke="var(--border)"
-              stroke-width="1"
-            />
-            <text
-              :x="xScale(hoverIndex, coinChartData.data.length)"
-              :y="yScale(coinChartData.data[hoverIndex].price, coinChartData.minVal, coinChartData.maxVal) - 18"
-              text-anchor="middle"
-              class="chart-tooltip"
-            >
-              {{ formatDate(coinChartData.data[hoverIndex].date) }} — Rs {{ coinChartData.data[hoverIndex].price.toLocaleString() }}
-            </text>
-          </template>
+            
+            <g class="tooltip" :transform="`translate(${Math.min(Math.max(xScale(hoverIndex, coinChartData.data.length), padLeft + 60), chartWidth - padRight - 60)}, ${Math.max(yScale(coinChartData.data[hoverIndex].price, coinChartData.minVal, coinChartData.maxVal) - 40, padTop)})`">
+              <text x="0" y="-12" text-anchor="middle" class="tooltip-date">{{ formatDate(coinChartData.data[hoverIndex].date) }}</text>
+              <text x="0" y="6" text-anchor="middle" class="tooltip-price">Rs {{ coinChartData.data[hoverIndex].price.toLocaleString() }}</text>
+            </g>
+          </g>
 
+          <!-- X-axis labels -->
           <text
             v-for="(d, i) in coinChartData.data.filter((_, idx) => idx % Math.floor(Math.max(coinChartData.data.length / 6, 1)) === 0)"
             :key="'x-' + d.date"
             :x="xScale(coinChartData.data.indexOf(d), coinChartData.data.length)"
-            :y="chartHeight - 8"
+            :y="chartHeight - 12"
             text-anchor="middle"
             class="chart-label"
           >
             {{ new Date(d.date).getFullYear() }}
           </text>
         </svg>
-        <div v-else class="chart-empty">Not enough data to display chart</div>
+        <div v-else class="chart-empty">
+          <p>Insufficient data to generate historical chart</p>
+        </div>
       </div>
     </section>
 
-    <!-- Historical Table -->
     <section class="table-section">
-      <h3>Recent Prices</h3>
+      <h3 class="section-heading">Recent Prices</h3>
       <div class="table-wrap">
         <table>
           <thead>
@@ -244,177 +250,239 @@ const yTicks = computed(() => {
 
 <style scoped>
 .page {
-  max-width: 1280px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 40px 24px;
-  flex: 1;
+  padding: 80px 24px;
+  width: 100%;
 }
 
-.hero {
-  margin-bottom: 32px;
+.hero-section {
+  margin-bottom: 64px;
 }
 
-.hero h2 {
-  font-size: 48px;
+.meta-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
+}
+
+.divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--border);
+}
+
+.main-title {
+  font-size: 64px;
   line-height: 1;
-  margin-bottom: 12px;
+  margin-bottom: 48px;
+  letter-spacing: -0.02em;
 }
 
-.hero-sub {
-  color: var(--text-secondary);
+.section-heading {
+  font-family: var(--font);
   font-size: 14px;
-  max-width: 500px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.coins-grid-section {
+  margin-bottom: 80px;
 }
 
 .coins-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border: 2px solid var(--border);
-  margin-bottom: 12px;
+  gap: 20px;
 }
 
-.coin-card {
-  padding: 24px;
-  border-right: 2px solid var(--border);
+.coin-switcher {
+  background: transparent;
+  border: none;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
   cursor: pointer;
-  transition: all 0.1s;
-}
-
-.coin-card:last-child {
-  border-right: none;
-}
-
-.coin-card:hover {
-  background: var(--row-hover);
-}
-
-.coin-card.active {
-  background: var(--text);
-  color: var(--bg);
-}
-
-.coin-card.active .coin-specs {
-  color: var(--bg);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  outline: none;
   opacity: 0.6;
 }
 
-.coin-denom {
+.coin-switcher:hover {
+  opacity: 0.8;
+  transform: translateY(-4px);
+}
+
+.coin-switcher.active {
+  opacity: 1;
+  transform: translateY(-4px) scale(1.05);
+}
+
+.coin-icon {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold-accent));
+  padding: 4px;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+.coin-switcher.active .coin-icon {
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), 0 12px 24px -4px rgba(212, 175, 55, 0.4), 0 0 0 2px var(--gold-color);
+}
+
+.coin-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-accent), var(--gold-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+html.dark .coin-inner {
+  color: #000;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+}
+
+.coin-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .coin-price {
-  font-family: var(--font-mono);
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: 28px;
   font-weight: 700;
-  margin-bottom: 8px;
+  color: var(--text);
+  line-height: 1;
 }
 
 .coin-specs {
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   display: flex;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.coin-date {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 40px;
+.dot {
+  color: var(--border);
 }
 
 .chart-section {
-  margin-bottom: 48px;
+  margin-bottom: 80px;
 }
 
-.chart-section h3 {
-  font-size: 24px;
-  margin-bottom: 24px;
-}
-
-.chart-container {
-  border: 2px solid var(--border);
-  padding: 16px;
-  background: var(--surface);
+.chart-wrapper {
+  margin-top: 32px;
 }
 
 .chart {
   width: 100%;
   height: auto;
   display: block;
+  overflow: visible;
 }
 
 .chart-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   fill: var(--text-muted);
 }
 
-.chart-tooltip {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  fill: var(--text);
+.tooltip-date {
+  font-size: 12px;
+  fill: var(--text-muted);
+}
+
+.tooltip-price {
+  font-size: 16px;
   font-weight: 600;
+  fill: var(--text);
 }
 
 .chart-empty {
-  padding: 60px;
+  padding: 80px 0;
   text-align: center;
   color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  text-transform: uppercase;
 }
 
-.table-section h3 {
-  font-size: 24px;
-  margin-bottom: 24px;
+.table-section {
+  margin-bottom: 40px;
 }
 
 .table-wrap {
-  border: 2px solid var(--border);
   overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  text-align: left;
 }
 
 thead {
-  background: var(--table-header);
+  border-bottom: 2px solid var(--border);
 }
 
 th {
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 16px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid var(--border);
   white-space: nowrap;
 }
 
 td {
-  padding: 10px 16px;
+  padding: 20px 0;
+  font-size: 16px;
+  font-family: var(--font-display);
   border-bottom: 1px solid var(--row-border);
+  color: var(--text);
 }
 
-tr:hover td {
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background 0.2s;
+}
+
+tbody tr:hover {
   background: var(--row-hover);
 }
 
 .td-date {
   color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -423,21 +491,12 @@ tr:hover td {
 }
 
 @media (max-width: 768px) {
-  .hero h2 {
-    font-size: 32px;
+  .main-title {
+    font-size: 48px;
   }
-
+  
   .coins-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .coin-card:nth-child(2) {
-    border-right: none;
-  }
-
-  .coin-card:nth-child(1),
-  .coin-card:nth-child(2) {
-    border-bottom: 2px solid var(--border);
   }
 }
 </style>
