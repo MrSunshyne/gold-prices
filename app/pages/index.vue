@@ -46,8 +46,8 @@ const filteredChartData = computed(() => {
 
 const chartWidth = 1000
 const chartHeight = 400
-const padLeft = 120
-const padRight = 24
+const padLeft = 60
+const padRight = 10
 const padTop = 40
 const padBottom = 56
 
@@ -437,6 +437,12 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 
 .chart-section {
   margin-bottom: 64px;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 1200px;
+  padding: 0 24px;
 }
 
 .chart-header {
@@ -538,35 +544,53 @@ const karats = ['24k', '22k', '21k', '18k'] as const
     padding: 40px 16px;
   }
 
-  .main-title {
-    font-size: 40px;
-  }
-
-  .primary-price-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
-  }
-
-  .price-value {
-    font-size: 56px;
-  }
-
-  .price-right {
-    text-align: left;
-  }
-
-  .price-change {
-    justify-content: flex-start;
+  .hero-section {
+    text-align: center;
+    margin-bottom: 40px;
   }
 
   .meta-info {
     font-size: 11px;
+    justify-content: center;
+  }
+
+  .main-title {
+    font-size: 36px;
+    margin-bottom: 32px;
+  }
+
+  .primary-price-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 24px;
+  }
+
+  .price-left {
+    text-align: center;
+  }
+
+  .price-value {
+    font-size: 48px;
+  }
+
+  .price-right {
+    text-align: center;
+  }
+
+  .price-change {
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  .change-label {
+    font-size: 12px;
   }
 
   .data-split {
     grid-template-columns: 1fr;
     gap: 48px;
+    padding: 0 8px;
   }
 
   .chart-header {
