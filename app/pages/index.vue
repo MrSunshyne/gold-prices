@@ -5,7 +5,6 @@ const {
   allTimeHigh,
   allTimeLow,
   chartData,
-  coreLoading,
   formatDate,
   formatPrice,
   formatPriceShort,
@@ -124,9 +123,7 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 
 <template>
   <main class="page">
-    <div v-if="coreLoading" class="loading">Loading gold price data...</div>
-    <template v-else-if="currentPrice && lastChange && allTimeHigh && allTimeLow">
-    <div class="hero-section">
+    <div class="hero-section" v-if="currentPrice && lastChange && allTimeHigh && allTimeLow">
       <div class="meta-info">
         <span>Updated {{ timeAgo(currentPrice.date) }}</span>
       </div>
@@ -291,7 +288,6 @@ const karats = ['24k', '22k', '21k', '18k'] as const
         </div>
       </div>
     </div>
-    </template>
   </main>
 </template>
 
