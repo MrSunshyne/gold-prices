@@ -18,12 +18,39 @@ useHead({
 
 const hoverIndex = ref<number | null>(null)
 
+const rangeOptions = [
+  { label: '1M', months: 1 },
+  { label: '1Y', months: 12 },
+  { label: '5Y', months: 60 },
+  { label: '10Y', months: 120 },
+  { label: 'All', months: 0 },
+] as const
+
+const selectedRange = ref(12)
+
+const filteredChartData = computed(() => {
+  const { data, minVal, maxVal } = chartData.value
+  if (data.length === 0) return { data: [], minVal: 0, maxVal: 0 }
+  if (selectedRange.value === 0) return { data, minVal, maxVal }
+  const cutoff = new Date()
+  cutoff.setMonth(cutoff.getMonth() - selectedRange.value)
+  const cutoffStr = cutoff.toISOString().slice(0, 10)
+  const filtered = data.filter(d => d.date >= cutoffStr)
+  if (filtered.length < 2) return { data, minVal, maxVal }
+  const values = filtered.map(d => d.price_per_gram)
+  return {
+    data: filtered,
+    minVal: Math.floor(Math.min(...values) / 500) * 500,
+    maxVal: Math.ceil(Math.max(...values) / 500) * 500,
+  }
+})
+
 const chartWidth = 1000
 const chartHeight = 400
-const padLeft = 80
+const padLeft = 120
 const padRight = 24
 const padTop = 40
-const padBottom = 40
+const padBottom = 56
 
 function xScale(i: number, total: number): number {
   return padLeft + (i / (total - 1)) * (chartWidth - padLeft - padRight)
@@ -34,7 +61,7 @@ function yScale(val: number, min: number, max: number): number {
 }
 
 const chartPath = computed(() => {
-  const { data, minVal, maxVal } = chartData.value
+  const { data, minVal, maxVal } = filteredChartData.value
   if (data.length < 2) return ''
   return data.map((d, i) => {
     const x = xScale(i, data.length)
@@ -44,7 +71,7 @@ const chartPath = computed(() => {
 })
 
 const chartAreaPath = computed(() => {
-  const { data, minVal, maxVal } = chartData.value
+  const { data, minVal, maxVal } = filteredChartData.value
   if (data.length < 2) return ''
   const bottom = chartHeight - padBottom
   const points = data.map((d, i) => {
@@ -58,7 +85,7 @@ const chartAreaPath = computed(() => {
 })
 
 const yTicks = computed(() => {
-  const { minVal, maxVal } = chartData.value
+  const { minVal, maxVal } = filteredChartData.value
   const range = maxVal - minVal
   const step = range <= 2000 ? 500 : range <= 5000 ? 1000 : 2000
   const ticks = []
@@ -72,7 +99,7 @@ function onChartHover(event: MouseEvent) {
   const svg = (event.currentTarget as SVGElement)
   const rect = svg.getBoundingClientRect()
   const mouseX = event.clientX - rect.left
-  const { data } = chartData.value
+  const { data } = filteredChartData.value
   const scaleX = chartWidth / rect.width
 
   let closest = 0
@@ -102,8 +129,6 @@ const karats = ['24k', '22k', '21k', '18k'] as const
     <div class="hero-section">
       <div class="meta-info">
         <span>Updated {{ timeAgo(currentPrice.date) }}</span>
-        <span class="divider"></span>
-        <span>Bank of Mauritius</span>
       </div>
       <h2 class="main-title">Industrial Gold Prices</h2>
       
@@ -117,7 +142,7 @@ const karats = ['24k', '22k', '21k', '18k'] as const
           <div class="price-change" :class="lastChange.change >= 0 ? 'up' : 'down'">
             <svg v-if="lastChange.change >= 0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-            <span class="change-amount">{{ Math.abs(lastChange.change) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
+            <span class="change-amount">Rs {{ formatPriceShort(Math.abs(lastChange.change)) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
           </div>
           <div class="change-label">Since {{ formatDate(lastChange.sinceDate) }}</div>
         </div>
@@ -125,7 +150,19 @@ const karats = ['24k', '22k', '21k', '18k'] as const
     </div>
 
     <section class="chart-section">
-      <h3 class="section-heading">Historical Performance</h3>
+      <div class="chart-header">
+        <h3 class="section-heading">Historical Performance</h3>
+        <div class="range-switcher">
+          <button
+            v-for="opt in rangeOptions"
+            :key="opt.label"
+            :class="{ active: selectedRange === opt.months }"
+            @click="selectedRange = opt.months; hoverIndex = null"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
       <div class="chart-wrapper">
         <svg
           :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
@@ -145,9 +182,9 @@ const karats = ['24k', '22k', '21k', '18k'] as const
             v-for="tick in yTicks"
             :key="tick"
             :x1="padLeft"
-            :y1="yScale(tick, chartData.minVal, chartData.maxVal)"
+            :y1="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal)"
             :x2="chartWidth - padRight"
-            :y2="yScale(tick, chartData.minVal, chartData.maxVal)"
+            :y2="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal)"
             stroke="var(--border)"
             stroke-width="1"
             stroke-dasharray="2 6"
@@ -158,7 +195,7 @@ const karats = ['24k', '22k', '21k', '18k'] as const
             v-for="tick in yTicks"
             :key="'label-' + tick"
             :x="padLeft - 16"
-            :y="yScale(tick, chartData.minVal, chartData.maxVal) + 4"
+            :y="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal) + 8"
             text-anchor="end"
             class="chart-label"
           >
@@ -184,35 +221,35 @@ const karats = ['24k', '22k', '21k', '18k'] as const
           <!-- Hover Indicator -->
           <g v-if="hoverIndex !== null" class="hover-group">
             <line
-              :x1="xScale(hoverIndex, chartData.data.length)"
+              :x1="xScale(hoverIndex, filteredChartData.data.length)"
               :y1="padTop"
-              :x2="xScale(hoverIndex, chartData.data.length)"
+              :x2="xScale(hoverIndex, filteredChartData.data.length)"
               :y2="chartHeight - padBottom"
               stroke="var(--gold-accent)"
               stroke-width="1"
               stroke-dasharray="4 4"
             />
             <circle
-              :cx="xScale(hoverIndex, chartData.data.length)"
-              :cy="yScale(chartData.data[hoverIndex].price_per_gram, chartData.minVal, chartData.maxVal)"
+              :cx="xScale(hoverIndex, filteredChartData.data.length)"
+              :cy="yScale(filteredChartData.data[hoverIndex].price_per_gram, filteredChartData.minVal, filteredChartData.maxVal)"
               r="5"
               fill="var(--bg)"
               stroke="var(--gold-color)"
               stroke-width="2"
             />
             <!-- Tooltip -->
-            <g class="tooltip" :transform="`translate(${Math.min(Math.max(xScale(hoverIndex, chartData.data.length), padLeft + 60), chartWidth - padRight - 60)}, ${Math.max(yScale(chartData.data[hoverIndex].price_per_gram, chartData.minVal, chartData.maxVal) - 40, padTop)})`">
-              <text x="0" y="-12" text-anchor="middle" class="tooltip-date">{{ formatDate(chartData.data[hoverIndex].date) }}</text>
-              <text x="0" y="6" text-anchor="middle" class="tooltip-price">Rs {{ formatPriceShort(chartData.data[hoverIndex].price_per_gram) }}</text>
+            <g class="tooltip" :transform="`translate(${Math.min(Math.max(xScale(hoverIndex, filteredChartData.data.length), padLeft + 100), chartWidth - padRight - 100)}, ${Math.max(yScale(filteredChartData.data[hoverIndex].price_per_gram, filteredChartData.minVal, filteredChartData.maxVal) - 56, padTop)})`">
+              <text x="0" y="-16" text-anchor="middle" class="tooltip-date">{{ formatDate(filteredChartData.data[hoverIndex].date) }}</text>
+              <text x="0" y="14" text-anchor="middle" class="tooltip-price">Rs {{ formatPriceShort(filteredChartData.data[hoverIndex].price_per_gram) }}</text>
             </g>
           </g>
 
           <!-- X-axis labels -->
           <text
-            v-for="(d, i) in chartData.data.filter((_, idx) => idx % Math.floor(chartData.data.length / 6) === 0)"
+            v-for="(d, i) in filteredChartData.data.filter((_, idx) => idx % Math.floor(filteredChartData.data.length / 4) === 0)"
             :key="'x-' + d.date"
-            :x="xScale(chartData.data.indexOf(d), chartData.data.length)"
-            :y="chartHeight - 12"
+            :x="xScale(filteredChartData.data.indexOf(d), filteredChartData.data.length)"
+            :y="chartHeight - 16"
             text-anchor="middle"
             class="chart-label"
           >
@@ -405,6 +442,47 @@ const karats = ['24k', '22k', '21k', '18k'] as const
   margin-bottom: 64px;
 }
 
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-header .section-heading {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.range-switcher {
+  display: flex;
+  gap: 4px;
+}
+
+.range-switcher button {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.range-switcher button:hover {
+  color: var(--text);
+  background: var(--row-hover);
+}
+
+.range-switcher button.active {
+  color: var(--gold-color);
+  background: var(--row-hover);
+  font-weight: 600;
+}
+
 .chart-wrapper {
   margin-top: 32px;
 }
@@ -417,17 +495,17 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 }
 
 .chart-label {
-  font-size: 12px;
+  font-size: 22px;
   fill: var(--text-muted);
 }
 
 .tooltip-date {
-  font-size: 12px;
+  font-size: 22px;
   fill: var(--text-muted);
 }
 
 .tooltip-price {
-  font-size: 16px;
+  font-size: 28px;
   font-weight: 600;
   fill: var(--text);
 }
@@ -466,9 +544,28 @@ const karats = ['24k', '22k', '21k', '18k'] as const
     justify-content: flex-start;
   }
 
+  .meta-info {
+    font-size: 11px;
+  }
+
   .data-split {
     grid-template-columns: 1fr;
     gap: 48px;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .range-switcher {
+    width: 100%;
+  }
+
+  .range-switcher button {
+    flex: 1;
+    text-align: center;
   }
 }
 </style>
