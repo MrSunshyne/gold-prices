@@ -2,6 +2,8 @@
 const {
   coins,
   currentCoins,
+  coinsLoaded,
+  fetchCoins,
   formatDate,
   formatPrice,
   timeAgo,
@@ -9,6 +11,10 @@ const {
 
 useHead({
   title: 'Mauritius Gold Price Index — Dodo Gold Coins',
+})
+
+onMounted(() => {
+  fetchCoins()
 })
 
 const selectedDenom = ref<number | null>(null)
@@ -100,6 +106,8 @@ const yTicks = computed(() => {
 
 <template>
   <main class="page">
+    <div v-if="!coinsLoaded" class="loading">Loading coin data...</div>
+    <template v-else-if="currentCoins">
     <div class="hero-section">
       <div class="meta-info">
         <span>Updated {{ formatDate(currentCoins.date) }}</span>
@@ -245,10 +253,18 @@ const yTicks = computed(() => {
         </table>
       </div>
     </section>
+    </template>
   </main>
 </template>
 
 <style scoped>
+.loading {
+  padding: 120px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
 .page {
   max-width: 900px;
   margin: 0 auto;
@@ -491,12 +507,58 @@ tbody tr:hover {
 }
 
 @media (max-width: 768px) {
+  .page {
+    padding: 40px 16px;
+  }
+
   .main-title {
-    font-size: 48px;
+    font-size: 40px;
   }
   
   .coins-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .coin-switcher {
+    padding: 12px 8px;
+  }
+
+  .coin-icon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .coin-inner {
+    font-size: 14px;
+  }
+
+  .coin-price {
+    font-size: 20px;
+  }
+
+  .coin-specs {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .dot {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .coins-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .coin-specs {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .dot {
+    display: inline;
   }
 }
 </style>
