@@ -9,6 +9,7 @@ const {
   formatPrice,
   formatPriceShort,
   timeAgo,
+  prices,
 } = useGoldPrices()
 
 useHead({
@@ -44,12 +45,12 @@ const filteredChartData = computed(() => {
   }
 })
 
-const chartWidth = 1000
-const chartHeight = 400
+const chartWidth = 1200
+const chartHeight = 500
 const padLeft = 60
-const padRight = 10
+const padRight = 0
 const padTop = 40
-const padBottom = 56
+const padBottom = 40
 
 function xScale(i: number, total: number): number {
   return padLeft + (i / (total - 1)) * (chartWidth - padLeft - padRight)
@@ -117,174 +118,161 @@ function onChartHover(event: MouseEvent) {
 function onChartLeave() {
   hoverIndex.value = null
 }
-
-const karats = ['24k', '22k', '21k', '18k'] as const
 </script>
 
 <template>
-  <main class="page">
-    <div class="hero-section" v-if="currentPrice && lastChange && allTimeHigh && allTimeLow">
-      <div class="meta-info">
-        <span>Updated {{ timeAgo(currentPrice.date) }}</span>
-      </div>
-      <h2 class="main-title">Industrial Gold Prices</h2>
-      
-      <div class="primary-price-container">
-        <div class="price-left">
-          <div class="price-label">24 Karat Gold</div>
-          <div class="price-value">Rs {{ formatPriceShort(currentPrice.price_per_gram) }}</div>
-          <div class="price-unit">per gram</div>
+  <main class="luxury-page">
+    <div class="hero-container" v-if="currentPrice && allTimeHigh && allTimeLow && lastChange">
+      <div class="hero-content">
+        <div class="meta-badge">
+          <span>Updated {{ timeAgo(currentPrice.date) }}</span>
         </div>
-        <div class="price-right">
-          <div class="price-change" :class="lastChange.change >= 0 ? 'up' : 'down'">
+        
+        <h1 class="massive-title">
+          <span class="text-light">Industrial</span><br/>
+          Gold
+        </h1>
+
+        <div class="price-showcase">
+          <div class="price-huge">Rs {{ formatPriceShort(currentPrice.price_per_gram) }}</div>
+          <div class="price-desc">Current value per gram of 24 Karat industrial gold.</div>
+          
+          <div class="trend-indicator" :class="lastChange.change >= 0 ? 'up' : 'down'">
             <svg v-if="lastChange.change >= 0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-            <span class="change-amount">Rs {{ formatPriceShort(Math.abs(lastChange.change)) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
+            <span class="trend-val">Rs {{ Math.abs(lastChange.change) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
+            <span class="trend-date">since {{ formatDate(lastChange.sinceDate) }}</span>
           </div>
-          <div class="change-label">Since {{ formatDate(lastChange.sinceDate) }}</div>
+        </div>
+
+        <div class="purity-grid">
+          <div class="purity-item">
+            <span class="p-label">22K Gold</span>
+            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['22k']) }}</span>
+          </div>
+          <div class="purity-item">
+            <span class="p-label">21K Gold</span>
+            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['21k']) }}</span>
+          </div>
+          <div class="purity-item">
+            <span class="p-label">18K Gold</span>
+            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['18k']) }}</span>
+          </div>
+          <div class="purity-item highlight">
+            <span class="p-label">All-Time High</span>
+            <span class="p-val">Rs {{ formatPriceShort(allTimeHigh.price_per_gram) }}</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <section class="chart-section">
-      <div class="chart-header">
-        <h3 class="section-heading">Historical Performance</h3>
-        <div class="range-switcher">
-          <button
-            v-for="opt in rangeOptions"
-            :key="opt.label"
-            :class="{ active: selectedRange === opt.months }"
-            @click="selectedRange = opt.months; hoverIndex = null"
+      <div class="hero-visual">
+        <div class="glass-chart-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <h3>Historical Valuation</h3>
+              <p>24K Gold Price Trajectory</p>
+            </div>
+            <div class="range-switcher">
+              <button
+                v-for="opt in rangeOptions"
+                :key="opt.label"
+                :class="{ active: selectedRange === opt.months }"
+                @click="selectedRange = opt.months; hoverIndex = null"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+
+          <svg
+            :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
+            class="interactive-chart"
+            @mousemove="onChartHover"
+            @mouseleave="onChartLeave"
           >
-            {{ opt.label }}
-          </button>
-        </div>
-      </div>
-      <div class="chart-wrapper">
-        <svg
-          :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
-          class="chart"
-          @mousemove="onChartHover"
-          @mouseleave="onChartLeave"
-        >
-          <defs>
-            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="var(--gold-color)" stop-opacity="0.2" />
-              <stop offset="100%" stop-color="var(--gold-color)" stop-opacity="0.0" />
-            </linearGradient>
-          </defs>
+            <defs>
+              <filter id="lineGlow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
 
-          <!-- Horizontal Grid Lines -->
-          <line
-            v-for="tick in yTicks"
-            :key="tick"
-            :x1="padLeft"
-            :y1="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal)"
-            :x2="chartWidth - padRight"
-            :y2="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal)"
-            stroke="var(--border)"
-            stroke-width="1"
-            stroke-dasharray="2 6"
-          />
-
-          <!-- Y-axis labels -->
-          <text
-            v-for="tick in yTicks"
-            :key="'label-' + tick"
-            :x="padLeft - 16"
-            :y="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal) + 8"
-            text-anchor="end"
-            class="chart-label"
-          >
-            {{ tick.toLocaleString() }}
-          </text>
-
-          <!-- Area Fill -->
-          <path
-            :d="chartAreaPath"
-            fill="url(#areaGradient)"
-          />
-
-          <!-- Line -->
-          <path
-            :d="chartPath"
-            fill="none"
-            stroke="var(--gold-color)"
-            stroke-width="2"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          />
-
-          <!-- Hover Indicator -->
-          <g v-if="hoverIndex !== null" class="hover-group">
+            <!-- Grid -->
             <line
-              :x1="xScale(hoverIndex, filteredChartData.data.length)"
-              :y1="padTop"
-              :x2="xScale(hoverIndex, filteredChartData.data.length)"
-              :y2="chartHeight - padBottom"
-              stroke="var(--gold-accent)"
+              v-for="tick in yTicks"
+              :key="tick"
+              :x1="padLeft"
+              :y1="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal)"
+              :x2="chartWidth - padRight"
+              :y2="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal)"
+              stroke="var(--border)"
               stroke-width="1"
               stroke-dasharray="4 4"
+              opacity="0.5"
             />
-            <circle
-              :cx="xScale(hoverIndex, filteredChartData.data.length)"
-              :cy="yScale(filteredChartData.data[hoverIndex].price_per_gram, filteredChartData.minVal, filteredChartData.maxVal)"
-              r="5"
-              fill="var(--bg)"
+
+            <text
+              v-for="tick in yTicks"
+              :key="'label-' + tick"
+              :x="padLeft - 16"
+              :y="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal) + 4"
+              text-anchor="end"
+              class="chart-axis-text"
+            >
+              {{ tick.toLocaleString() }}
+            </text>
+
+            <path
+              :d="chartPath"
+              fill="none"
               stroke="var(--gold-color)"
               stroke-width="2"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+              filter="url(#lineGlow)"
             />
-            <!-- Tooltip -->
-            <g class="tooltip" :transform="`translate(${Math.min(Math.max(xScale(hoverIndex, filteredChartData.data.length), padLeft + 100), chartWidth - padRight - 100)}, ${Math.max(yScale(filteredChartData.data[hoverIndex].price_per_gram, filteredChartData.minVal, filteredChartData.maxVal) - 56, padTop)})`">
-              <rect x="-80" y="-32" width="160" height="52" rx="6" class="tooltip-bg" />
-              <text x="0" y="-12" text-anchor="middle" class="tooltip-date">{{ formatDate(filteredChartData.data[hoverIndex].date) }}</text>
-              <text x="0" y="10" text-anchor="middle" class="tooltip-price">Rs {{ formatPriceShort(filteredChartData.data[hoverIndex].price_per_gram) }}</text>
+
+            <!-- Hover -->
+            <g v-if="hoverIndex !== null" class="hover-group">
+              <line
+                :x1="xScale(hoverIndex, filteredChartData.data.length)"
+                :y1="padTop - 10"
+                :x2="xScale(hoverIndex, filteredChartData.data.length)"
+                :y2="chartHeight - padBottom"
+                stroke="var(--gold-accent)"
+                stroke-width="1"
+                stroke-dasharray="4 4"
+              />
+              <circle
+                :cx="xScale(hoverIndex, filteredChartData.data.length)"
+                :cy="yScale(filteredChartData.data[hoverIndex].price_per_gram, filteredChartData.minVal, filteredChartData.maxVal)"
+                r="6"
+                fill="var(--bg)"
+                stroke="var(--gold-color)"
+                stroke-width="3"
+              />
+              
+              <g class="chart-tooltip" :transform="`translate(${Math.min(Math.max(xScale(hoverIndex, filteredChartData.data.length), padLeft + 70), chartWidth - padRight - 70)}, ${Math.max(yScale(filteredChartData.data[hoverIndex].price_per_gram, filteredChartData.minVal, filteredChartData.maxVal) - 50, padTop)})`">
+                <rect x="-70" y="-35" width="140" height="50" rx="8" class="tooltip-bg" />
+                <text x="0" y="-15" text-anchor="middle" class="tooltip-date">{{ formatDate(filteredChartData.data[hoverIndex].date) }}</text>
+                <text x="0" y="5" text-anchor="middle" class="tooltip-price">Rs {{ formatPriceShort(filteredChartData.data[hoverIndex].price_per_gram) }}</text>
+              </g>
             </g>
-          </g>
 
-          <!-- X-axis labels -->
-          <text
-            v-for="(d, i) in filteredChartData.data.filter((_, idx) => idx % Math.floor(filteredChartData.data.length / 4) === 0)"
-            :key="'x-' + d.date"
-            :x="xScale(filteredChartData.data.indexOf(d), filteredChartData.data.length)"
-            :y="chartHeight - 16"
-            text-anchor="middle"
-            class="chart-label"
-          >
-            {{ new Date(d.date).getFullYear() }}
-          </text>
-        </svg>
-      </div>
-    </section>
-
-    <div class="data-split" v-if="currentPrice && allTimeHigh && allTimeLow">
-      <div class="other-karats">
-        <h3 class="section-heading">Other Karats</h3>
-        <div class="karat-list">
-          <div v-for="k in karats.slice(1)" :key="k" class="list-item">
-            <span class="list-label">{{ k.toUpperCase() }}</span>
-            <span class="list-value">Rs {{ formatPriceShort(currentPrice.karats[k]) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="historical-stats">
-        <h3 class="section-heading">All-Time Statistics</h3>
-        <div class="stat-list">
-          <div class="list-item">
-            <div class="stat-meta">
-              <span class="list-label">Highest</span>
-              <span class="stat-date">{{ formatDate(allTimeHigh.date) }}</span>
-            </div>
-            <span class="list-value">Rs {{ formatPriceShort(allTimeHigh.price_per_gram) }}</span>
-          </div>
-          <div class="list-item">
-            <div class="stat-meta">
-              <span class="list-label">Lowest</span>
-              <span class="stat-date">{{ formatDate(allTimeLow.date) }}</span>
-            </div>
-            <span class="list-value">Rs {{ formatPriceShort(allTimeLow.price_per_gram) }}</span>
-          </div>
+            <text
+              v-for="(d, i) in filteredChartData.data.filter((_, idx) => idx % Math.floor(filteredChartData.data.length / 5) === 0)"
+              :key="'x-' + d.date"
+              :x="xScale(filteredChartData.data.indexOf(d), filteredChartData.data.length)"
+              :y="chartHeight - 12"
+              text-anchor="middle"
+              class="chart-axis-text"
+            >
+              {{ new Date(d.date).getFullYear() }}
+            </text>
+          </svg>
         </div>
       </div>
     </div>
@@ -292,169 +280,202 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 </template>
 
 <style scoped>
-.page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 80px 24px;
-  width: 100%;
-}
-
-.hero-section {
-  margin-bottom: 64px;
-}
-
-.meta-info {
+.luxury-page {
+  position: relative;
+  overflow-x: hidden;
+  min-height: calc(100vh - 72px);
   display: flex;
   align-items: center;
+}
+
+.luxury-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  mask-image: linear-gradient(to right, black 5%, transparent 60%);
+  -webkit-mask-image: linear-gradient(to right, black 5%, transparent 60%);
+}
+
+html.dark .luxury-page::before {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.hero-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 40px 24px;
+  display: grid;
+  grid-template-columns: minmax(400px, 1fr) 1.5fr;
+  gap: 80px;
+  align-items: center;
+  z-index: 1;
+}
+
+.hero-content {
+  /* No custom padding-left */
+}
+
+.meta-badge {
+  display: inline-flex;
+  align-items: center;
   gap: 12px;
+  color: var(--gold-accent);
   font-size: 13px;
-  color: var(--text-muted);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 24px;
+  letter-spacing: 0.1em;
+  margin-bottom: 32px;
 }
 
-.divider {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background-color: var(--border);
+html.dark .meta-badge {
+  color: var(--gold-light);
 }
 
-.main-title {
-  font-size: 64px;
-  line-height: 1;
+.massive-title {
+  font-family: var(--font-display);
+  font-size: 110px;
+  line-height: 0.9;
+  font-weight: 700;
+  color: var(--text);
   margin-bottom: 48px;
   letter-spacing: -0.02em;
 }
 
-.primary-price-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding-bottom: 32px;
-  border-bottom: 1px solid var(--border);
-}
-
-.price-label {
-  font-size: 14px;
+.text-light {
+  font-weight: 300;
+  font-style: italic;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 12px;
 }
 
-.price-value {
+.price-showcase {
+  margin-bottom: 48px;
+}
+
+.price-huge {
   font-family: var(--font-display);
-  font-size: 72px;
-  font-weight: 500;
+  font-size: 64px;
+  font-weight: 600;
   color: var(--gold-color);
-  line-height: 0.9;
+  line-height: 1;
   margin-bottom: 8px;
 }
 
-.price-unit {
+html.dark .price-huge {
+  color: var(--gold-light);
+}
+
+.price-desc {
   font-size: 16px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  margin-bottom: 16px;
 }
 
-.price-right {
-  text-align: right;
-  padding-bottom: 8px;
-}
-
-.price-change {
-  display: flex;
+.trend-indicator {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
-  font-size: 20px;
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
-.price-change.up { color: var(--up-color); }
-.price-change.down { color: var(--down-color); }
+.trend-indicator.up { color: var(--up-color); }
+.trend-indicator.down { color: var(--down-color); }
 
-.change-label {
-  font-size: 14px;
+.trend-date {
   color: var(--text-muted);
+  font-weight: 400;
+  font-size: 14px;
 }
 
-.data-split {
+.purity-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  margin-bottom: 80px;
+  gap: 24px;
 }
 
-.section-heading {
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 16px;
-}
-
-.list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--row-border);
-}
-
-.list-item:last-child {
-  border-bottom: none;
-}
-
-.list-label {
-  font-size: 15px;
-  color: var(--text);
-  font-weight: 500;
-}
-
-.list-value {
-  font-family: var(--font-display);
-  font-size: 24px;
-  color: var(--text);
-}
-
-.stat-meta {
+.purity-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border);
 }
 
-.stat-date {
-  font-size: 13px;
+.purity-item.highlight {
+  border-left-color: var(--gold-color);
+}
+
+.p-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-muted);
+  font-weight: 600;
 }
 
-.chart-section {
-  margin-bottom: 64px;
-  width: 100vw;
+.p-val {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hero-visual {
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: 1200px;
-  padding: 0 24px;
-}
-
-.chart-header {
+  width: 100%;
+  height: 500px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
 }
 
-.chart-header .section-heading {
-  margin-bottom: 0;
-  border-bottom: none;
-  padding-bottom: 0;
+.glass-chart-panel {
+  padding: 0;
+  padding-right: 24px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  position: absolute;
+  left: 0;
+  /* Precisely span to the viewport right edge: 100% of grid cell + 24px container padding + auto margin */
+  width: calc(100% + max(0px, 50vw - 700px) + 24px);
+  box-sizing: border-box;
+}
+
+html.dark .glass-chart-panel {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.panel-header {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.panel-title-group h3 {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.panel-title-group p {
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .range-switcher {
@@ -478,7 +499,7 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 .range-switcher button::after {
   content: '';
   position: absolute;
-  bottom: -2px;
+  bottom: 0;
   left: 0;
   width: 0%;
   height: 2px;
@@ -500,109 +521,89 @@ const karats = ['24k', '22k', '21k', '18k'] as const
   width: 100%;
 }
 
-.chart-wrapper {
-  margin-top: 32px;
-}
-
-.chart {
+.interactive-chart {
   width: 100%;
   height: auto;
   display: block;
   overflow: visible;
 }
 
-.chart-label {
+.chart-axis-text {
   font-size: 12px;
   fill: var(--text-muted);
+  font-family: var(--font);
 }
 
 .tooltip-bg {
   fill: var(--bg);
-  opacity: 0.85;
+  stroke: var(--border);
+  stroke-width: 1;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+}
+
+html.dark .tooltip-bg {
+  fill: #111;
+  stroke: rgba(212, 175, 55, 0.3);
 }
 
 .tooltip-date {
-  font-size: 14px;
+  font-size: 11px;
   fill: var(--text-muted);
+  font-family: var(--font);
 }
 
 .tooltip-price {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   fill: var(--text);
+  font-family: var(--font-display);
 }
 
-.loading {
-  padding: 120px 0;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
+@media (max-width: 1024px) {
+  .massive-title {
+    font-size: 80px;
+  }
+  .hero-container {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    padding-top: 64px;
+    padding-bottom: 64px;
+  }
+  .hero-visual {
+    height: auto;
+    display: block;
+    position: relative;
+  }
+  .glass-chart-panel {
+    position: relative;
+    width: 100%;
+    left: auto;
+    padding-right: 0;
+  }
 }
 
 @media (max-width: 768px) {
-  .page {
-    padding: 40px 16px;
+  .luxury-page {
+    min-height: auto;
   }
-
-  .hero-section {
-    text-align: center;
-    margin-bottom: 40px;
+  .massive-title {
+    font-size: 64px;
   }
-
-  .meta-info {
-    font-size: 11px;
-    justify-content: center;
-  }
-
-  .main-title {
-    font-size: 36px;
-    margin-bottom: 32px;
-  }
-
-  .primary-price-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    padding-bottom: 24px;
-  }
-
-  .price-left {
-    text-align: center;
-  }
-
-  .price-value {
+  .price-huge {
     font-size: 48px;
   }
-
-  .price-right {
-    text-align: center;
+  .glass-chart-panel {
+    padding: 24px 16px;
+    border-radius: 24px;
   }
-
-  .price-change {
-    justify-content: center;
-    font-size: 13px;
-  }
-
-  .change-label {
-    font-size: 12px;
-  }
-
-  .data-split {
-    grid-template-columns: 1fr;
-    gap: 48px;
-    padding: 0 8px;
-  }
-
-  .chart-header {
+  .panel-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-
   .range-switcher {
     width: 100%;
   }
-
   .range-switcher button {
     flex: 1;
     text-align: center;
