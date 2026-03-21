@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { DATA_SOURCE, fetchLiveData } = useGoldPrices()
+const { DATA_SOURCE, fetchCoreData } = useGoldPrices()
 
 const route = useRoute()
 
@@ -9,7 +9,7 @@ onMounted(() => {
   dark.value = localStorage.getItem('theme') === 'dark'
     || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
   applyTheme()
-  fetchLiveData()
+  fetchCoreData()
 })
 
 function toggleDark() {
@@ -344,21 +344,22 @@ a {
 @media (max-width: 768px) {
   .header-inner {
     height: auto;
-    padding: 16px 24px;
+    padding: 16px;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
   .header-left {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     width: 100%;
   }
 
   .header-nav {
     width: 100%;
     justify-content: center;
-    gap: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
   }
 
   .footer-inner {
