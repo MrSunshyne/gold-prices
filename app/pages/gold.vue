@@ -301,8 +301,8 @@ function onChartLeave() {
   background-image: 
     linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  mask-image: linear-gradient(to right, black 20%, transparent 80%);
-  -webkit-mask-image: linear-gradient(to right, black 20%, transparent 80%);
+  mask-image: linear-gradient(to right, black 5%, transparent 60%);
+  -webkit-mask-image: linear-gradient(to right, black 5%, transparent 60%);
 }
 
 html.dark .luxury-page::before {
