@@ -124,38 +124,6 @@ const karats = ['24k', '22k', '21k', '18k'] as const
       </div>
     </div>
 
-    <div class="data-split">
-      <div class="other-karats">
-        <h3 class="section-heading">Other Karats</h3>
-        <div class="karat-list">
-          <div v-for="k in karats.slice(1)" :key="k" class="list-item">
-            <span class="list-label">{{ k.toUpperCase() }}</span>
-            <span class="list-value">Rs {{ formatPriceShort(currentPrice.karats[k]) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="historical-stats">
-        <h3 class="section-heading">All-Time Statistics</h3>
-        <div class="stat-list">
-          <div class="list-item">
-            <div class="stat-meta">
-              <span class="list-label">Highest</span>
-              <span class="stat-date">{{ formatDate(allTimeHigh.date) }}</span>
-            </div>
-            <span class="list-value">Rs {{ formatPriceShort(allTimeHigh.price_per_gram) }}</span>
-          </div>
-          <div class="list-item">
-            <div class="stat-meta">
-              <span class="list-label">Lowest</span>
-              <span class="stat-date">{{ formatDate(allTimeLow.date) }}</span>
-            </div>
-            <span class="list-value">Rs {{ formatPriceShort(allTimeLow.price_per_gram) }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <section class="chart-section">
       <h3 class="section-heading">Historical Performance</h3>
       <div class="chart-wrapper">
@@ -253,6 +221,38 @@ const karats = ['24k', '22k', '21k', '18k'] as const
         </svg>
       </div>
     </section>
+
+    <div class="data-split">
+      <div class="other-karats">
+        <h3 class="section-heading">Other Karats</h3>
+        <div class="karat-list">
+          <div v-for="k in karats.slice(1)" :key="k" class="list-item">
+            <span class="list-label">{{ k.toUpperCase() }}</span>
+            <span class="list-value">Rs {{ formatPriceShort(currentPrice.karats[k]) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="historical-stats">
+        <h3 class="section-heading">All-Time Statistics</h3>
+        <div class="stat-list">
+          <div class="list-item">
+            <div class="stat-meta">
+              <span class="list-label">Highest</span>
+              <span class="stat-date">{{ formatDate(allTimeHigh.date) }}</span>
+            </div>
+            <span class="list-value">Rs {{ formatPriceShort(allTimeHigh.price_per_gram) }}</span>
+          </div>
+          <div class="list-item">
+            <div class="stat-meta">
+              <span class="list-label">Lowest</span>
+              <span class="stat-date">{{ formatDate(allTimeLow.date) }}</span>
+            </div>
+            <span class="list-value">Rs {{ formatPriceShort(allTimeLow.price_per_gram) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
     </template>
   </main>
 </template>
