@@ -239,9 +239,9 @@ const karats = ['24k', '22k', '21k', '18k'] as const
             />
             <!-- Tooltip -->
             <g class="tooltip" :transform="`translate(${Math.min(Math.max(xScale(hoverIndex, filteredChartData.data.length), padLeft + 100), chartWidth - padRight - 100)}, ${Math.max(yScale(filteredChartData.data[hoverIndex].price_per_gram, filteredChartData.minVal, filteredChartData.maxVal) - 56, padTop)})`">
-              <rect x="-110" y="-32" width="220" height="62" rx="6" class="tooltip-bg" />
-              <text x="0" y="-16" text-anchor="middle" class="tooltip-date">{{ formatDate(filteredChartData.data[hoverIndex].date) }}</text>
-              <text x="0" y="14" text-anchor="middle" class="tooltip-price">Rs {{ formatPriceShort(filteredChartData.data[hoverIndex].price_per_gram) }}</text>
+              <rect x="-80" y="-32" width="160" height="52" rx="6" class="tooltip-bg" />
+              <text x="0" y="-12" text-anchor="middle" class="tooltip-date">{{ formatDate(filteredChartData.data[hoverIndex].date) }}</text>
+              <text x="0" y="10" text-anchor="middle" class="tooltip-price">Rs {{ formatPriceShort(filteredChartData.data[hoverIndex].price_per_gram) }}</text>
             </g>
           </g>
 
@@ -496,7 +496,7 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 }
 
 .chart-label {
-  font-size: 22px;
+  font-size: 12px;
   fill: var(--text-muted);
 }
 
@@ -506,12 +506,12 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 }
 
 .tooltip-date {
-  font-size: 22px;
+  font-size: 14px;
   fill: var(--text-muted);
 }
 
 .tooltip-price {
-  font-size: 28px;
+  font-size: 18px;
   font-weight: 600;
   fill: var(--text);
 }

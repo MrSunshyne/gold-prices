@@ -108,7 +108,7 @@ const yTicks = computed(() => {
   <main class="page">
     <div v-if="!coinsLoaded" class="loading">Loading coin data...</div>
     <template v-else-if="currentCoins">
-    <div class="hero-section">
+    <div class="hero-section" v-if="currentCoins">
       <div class="meta-info">
         <span>Updated {{ formatDate(currentCoins.date) }}</span>
         <span class="divider"></span>
