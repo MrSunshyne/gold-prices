@@ -16,172 +16,229 @@ useHead({
 
 function sortIndicator(field: string): string {
   if (sortField.value !== field) return ''
-  return sortDirection.value === 'asc' ? ' \u25B2' : ' \u25BC'
+  return sortDirection.value === 'asc' ? ' \u2191' : ' \u2193'
 }
 </script>
 
 <template>
   <main class="page">
-    <section class="hero">
-      <h2>Price History</h2>
-      <p class="hero-sub">Complete record of industrial gold prices from the Bank of Mauritius.</p>
+    <div class="hero-section">
+      <div class="meta-info">
+        <span>Updated {{ timeAgo(prices[0]?.date) }}</span>
+        <span class="divider"></span>
+        <span>Bank of Mauritius</span>
+      </div>
+      <h2 class="main-title">Complete Price History</h2>
+    </div>
+
+    <div class="data-split">
+      <div class="history-stats">
+        <h3 class="section-heading">Archive Overview</h3>
+        <div class="stat-list">
+          <div class="list-item">
+            <span class="list-label">Total Records</span>
+            <span class="list-value">{{ prices.length.toLocaleString() }}</span>
+          </div>
+          <div class="list-item">
+            <span class="list-label">First Entry</span>
+            <span class="list-value">{{ formatDate(prices[prices.length - 1]?.date) }}</span>
+          </div>
+          <div class="list-item">
+            <span class="list-label">Latest Entry</span>
+            <span class="list-value">{{ formatDate(prices[0]?.date) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="table-section">
+      <h3 class="section-heading">Detailed Valuations</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" @click="toggleSort('date')">
+                Date<span class="sort-icon">{{ sortIndicator('date') }}</span>
+              </th>
+              <th class="sortable" @click="toggleSort('24k')">
+                24K<span class="sort-icon">{{ sortIndicator('24k') }}</span>
+              </th>
+              <th class="sortable" @click="toggleSort('22k')">
+                22K<span class="sort-icon">{{ sortIndicator('22k') }}</span>
+              </th>
+              <th class="sortable" @click="toggleSort('21k')">
+                21K<span class="sort-icon">{{ sortIndicator('21k') }}</span>
+              </th>
+              <th class="sortable" @click="toggleSort('18k')">
+                18K<span class="sort-icon">{{ sortIndicator('18k') }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="entry in sortedPrices" :key="entry.date">
+              <td class="td-date">{{ formatDate(entry.date) }}</td>
+              <td class="td-price td-24k">{{ formatPrice(entry.karats['24k']) }}</td>
+              <td class="td-price">{{ formatPrice(entry.karats['22k']) }}</td>
+              <td class="td-price">{{ formatPrice(entry.karats['21k']) }}</td>
+              <td class="td-price">{{ formatPrice(entry.karats['18k']) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
-
-    <div class="stats-row">
-      <div class="stat-box">
-        <div class="stat-label">Total Records</div>
-        <div class="stat-value">{{ prices.length.toLocaleString() }}</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Date Range</div>
-        <div class="stat-value">{{ formatDate(prices[prices.length - 1]?.date) }} — {{ formatDate(prices[0]?.date) }}</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Last Updated</div>
-        <div class="stat-value">{{ timeAgo(prices[0]?.date) }}</div>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="sortable" @click="toggleSort('date')">
-              Date{{ sortIndicator('date') }}
-            </th>
-            <th class="sortable" @click="toggleSort('24k')">
-              24K{{ sortIndicator('24k') }}
-            </th>
-            <th class="sortable" @click="toggleSort('22k')">
-              22K{{ sortIndicator('22k') }}
-            </th>
-            <th class="sortable" @click="toggleSort('21k')">
-              21K{{ sortIndicator('21k') }}
-            </th>
-            <th class="sortable" @click="toggleSort('18k')">
-              18K{{ sortIndicator('18k') }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="entry in sortedPrices" :key="entry.date">
-            <td class="td-date">{{ formatDate(entry.date) }}</td>
-            <td class="td-price td-24k">{{ formatPrice(entry.karats['24k']) }}</td>
-            <td class="td-price">{{ formatPrice(entry.karats['22k']) }}</td>
-            <td class="td-price">{{ formatPrice(entry.karats['21k']) }}</td>
-            <td class="td-price">{{ formatPrice(entry.karats['18k']) }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   </main>
 </template>
 
 <style scoped>
 .page {
-  max-width: 1280px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 40px 24px;
-  flex: 1;
+  padding: 80px 24px;
+  width: 100%;
 }
 
-.hero {
-  margin-bottom: 32px;
+.hero-section {
+  margin-bottom: 64px;
 }
 
-.hero h2 {
-  font-size: 48px;
-  line-height: 1;
-  margin-bottom: 12px;
-}
-
-.hero-sub {
-  color: var(--text-secondary);
-  font-size: 14px;
-  max-width: 500px;
-}
-
-.stats-row {
+.meta-info {
   display: flex;
-  gap: 0;
-  border: 2px solid var(--border);
-  margin-bottom: 32px;
-}
-
-.stat-box {
-  flex: 1;
-  padding: 16px 20px;
-  border-right: 2px solid var(--border);
-}
-
-.stat-box:last-child {
-  border-right: none;
-}
-
-.stat-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
   color: var(--text-muted);
+  text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  margin-bottom: 24px;
 }
 
-.stat-value {
-  font-family: var(--font-mono);
+.divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--border);
+}
+
+.main-title {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 48px;
+  letter-spacing: -0.02em;
+}
+
+.section-heading {
+  font-family: var(--font);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.data-split {
+  margin-bottom: 80px;
+}
+
+.stat-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--row-border);
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.list-label {
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.list-value {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--text);
+}
+
+.table-section {
+  margin-bottom: 40px;
 }
 
 .table-wrap {
-  border: 2px solid var(--border);
   overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  text-align: left;
 }
 
 thead {
-  background: var(--table-header);
+  border-bottom: 2px solid var(--border);
 }
 
 th {
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 16px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid var(--border);
   white-space: nowrap;
 }
 
 th.sortable {
   cursor: pointer;
   user-select: none;
-  transition: background 0.1s;
+  transition: color 0.2s;
 }
 
 th.sortable:hover {
-  background: var(--text);
-  color: var(--bg);
+  color: var(--text);
+}
+
+.sort-icon {
+  margin-left: 4px;
+  color: var(--gold-color);
+  font-size: 14px;
 }
 
 td {
-  padding: 10px 16px;
+  padding: 20px 0;
+  font-size: 16px;
+  font-family: var(--font-display);
   border-bottom: 1px solid var(--row-border);
+  color: var(--text);
 }
 
-tr:hover td {
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background 0.2s;
+}
+
+tbody tr:hover {
   background: var(--row-hover);
 }
 
 .td-date {
   color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -190,26 +247,13 @@ tr:hover td {
 }
 
 .td-24k {
-  font-weight: 700;
   color: var(--gold-color);
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
-  .hero h2 {
-    font-size: 32px;
-  }
-
-  .stats-row {
-    flex-direction: column;
-  }
-
-  .stat-box {
-    border-right: none;
-    border-bottom: 2px solid var(--border);
-  }
-
-  .stat-box:last-child {
-    border-bottom: none;
+  .main-title {
+    font-size: 48px;
   }
 }
 </style>
