@@ -487,35 +487,45 @@ html.dark .glass-chart-panel {
 
 .range-switcher {
   display: flex;
-  gap: 4px;
-  background: var(--surface);
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  gap: 20px;
 }
 
 .range-switcher button {
   font-family: var(--font);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 6px 12px;
+  padding: 4px 0;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s;
-  border-radius: 4px;
+  position: relative;
+}
+
+.range-switcher button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background-color: var(--gold-color);
+  transition: width 0.3s ease;
+  border-radius: 2px;
 }
 
 .range-switcher button:hover {
   color: var(--text);
-  background: var(--row-hover);
 }
 
 .range-switcher button.active {
   color: var(--gold-color);
-  background: var(--row-hover);
   font-weight: 600;
+}
+
+.range-switcher button.active::after {
+  width: 100%;
 }
 
 .interactive-chart {
