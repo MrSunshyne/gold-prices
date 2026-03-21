@@ -452,6 +452,7 @@ html.dark .price-huge {
 
 .glass-chart-panel {
   padding: 0;
+  padding-right: 24px;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -459,7 +460,9 @@ html.dark .price-huge {
   -webkit-backdrop-filter: none;
   position: absolute;
   left: 0;
-  width: 140%; /* Simple relative scaling to push out the right side */
+  /* Precisely span to the viewport right edge: 100% of grid cell + 24px container padding + auto margin */
+  width: calc(100% + max(0px, 50vw - 700px) + 24px);
+  box-sizing: border-box;
 }
 
 html.dark .glass-chart-panel {
@@ -585,6 +588,7 @@ html.dark .tooltip-bg {
     position: relative;
     width: 100%;
     left: auto;
+    padding-right: 0;
   }
 }
 
