@@ -6,12 +6,20 @@ const {
   toggleSort,
   formatDate,
   formatPrice,
-  prices,
+  pricesLoaded,
+  fetchPrices,
+  totalEntries,
+  firstDate,
+  lastDate,
   timeAgo,
 } = useGoldPrices()
 
 useHead({
   title: 'Mauritius Gold Price Index — Price History',
+})
+
+onMounted(() => {
+  fetchPrices()
 })
 
 function sortIndicator(field: string): string {
@@ -24,7 +32,7 @@ function sortIndicator(field: string): string {
   <main class="page">
     <div class="hero-section">
       <div class="meta-info">
-        <span>Updated {{ timeAgo(prices[0]?.date) }}</span>
+        <span>Updated {{ timeAgo(lastDate) }}</span>
         <span class="divider"></span>
         <span>Bank of Mauritius</span>
       </div>
@@ -37,21 +45,23 @@ function sortIndicator(field: string): string {
         <div class="stat-list">
           <div class="list-item">
             <span class="list-label">Total Records</span>
-            <span class="list-value">{{ prices.length.toLocaleString() }}</span>
+            <span class="list-value">{{ totalEntries.toLocaleString() }}</span>
           </div>
           <div class="list-item">
             <span class="list-label">First Entry</span>
-            <span class="list-value">{{ formatDate(prices[prices.length - 1]?.date) }}</span>
+            <span class="list-value">{{ formatDate(firstDate) }}</span>
           </div>
           <div class="list-item">
             <span class="list-label">Latest Entry</span>
-            <span class="list-value">{{ formatDate(prices[0]?.date) }}</span>
+            <span class="list-value">{{ formatDate(lastDate) }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <section class="table-section">
+      <div v-if="!pricesLoaded" class="loading">Loading price history...</div>
+      <template v-else>
       <h3 class="section-heading">Detailed Valuations</h3>
       <div class="table-wrap">
         <table>
@@ -85,6 +95,7 @@ function sortIndicator(field: string): string {
           </tbody>
         </table>
       </div>
+      </template>
     </section>
   </main>
 </template>
@@ -251,9 +262,20 @@ tbody tr:hover {
   font-weight: 600;
 }
 
+.loading {
+  padding: 80px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
+  .page {
+    padding: 40px 16px;
+  }
+
   .main-title {
-    font-size: 48px;
+    font-size: 40px;
   }
 }
 </style>
