@@ -5,11 +5,11 @@ const {
   allTimeHigh,
   allTimeLow,
   chartData,
+  coreLoading,
   formatDate,
   formatPrice,
   formatPriceShort,
   timeAgo,
-  prices,
 } = useGoldPrices()
 
 useHead({
@@ -97,6 +97,8 @@ const karats = ['24k', '22k', '21k', '18k'] as const
 
 <template>
   <main class="page">
+    <div v-if="coreLoading" class="loading">Loading gold price data...</div>
+    <template v-else-if="currentPrice && lastChange && allTimeHigh && allTimeLow">
     <div class="hero-section">
       <div class="meta-info">
         <span>Updated {{ timeAgo(currentPrice.date) }}</span>
@@ -251,6 +253,7 @@ const karats = ['24k', '22k', '21k', '18k'] as const
         </svg>
       </div>
     </section>
+    </template>
   </main>
 </template>
 
@@ -429,15 +432,30 @@ const karats = ['24k', '22k', '21k', '18k'] as const
   fill: var(--text);
 }
 
+.loading {
+  padding: 120px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
+  .page {
+    padding: 40px 16px;
+  }
+
   .main-title {
-    font-size: 48px;
+    font-size: 40px;
   }
 
   .primary-price-container {
     flex-direction: column;
     align-items: flex-start;
-    gap: 32px;
+    gap: 24px;
+  }
+
+  .price-value {
+    font-size: 56px;
   }
 
   .price-right {
