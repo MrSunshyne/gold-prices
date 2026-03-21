@@ -122,10 +122,6 @@ function onChartLeave() {
 
 <template>
   <main class="luxury-page">
-    <!-- Glowing background elements -->
-    <div class="ambient-glow glow-1"></div>
-    <div class="ambient-glow glow-2"></div>
-
     <div class="hero-container" v-if="currentPrice && allTimeHigh && allTimeLow && lastChange">
       <div class="hero-content">
         <div class="meta-badge">
@@ -290,35 +286,17 @@ function onChartLeave() {
   min-height: calc(100vh - 72px);
   display: flex;
   align-items: center;
+  /* Premium subtle grid pattern */
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
 }
 
-.ambient-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.08;
-}
-
-html.dark .ambient-glow {
-  opacity: 0.12;
-}
-
-.glow-1 {
-  width: 40vw;
-  height: 40vw;
-  background: var(--gold-color);
-  top: -10%;
-  right: -5%;
-}
-
-.glow-2 {
-  width: 30vw;
-  height: 30vw;
-  background: var(--gold-accent);
-  bottom: 0%;
-  left: -5%;
+html.dark .luxury-page {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
 }
 
 .hero-container {
