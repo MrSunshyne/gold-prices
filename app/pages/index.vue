@@ -47,10 +47,10 @@ const filteredChartData = computed(() => {
 
 const chartWidth = 1200
 const chartHeight = 500
-const padLeft = 60
-const padRight = 0
+const padLeft = 90
+const padRight = 10
 const padTop = 40
-const padBottom = 40
+const padBottom = 56
 
 function xScale(i: number, total: number): number {
   return padLeft + (i / (total - 1)) * (chartWidth - padLeft - padRight)
@@ -95,10 +95,9 @@ const yTicks = computed(() => {
   return ticks
 })
 
-function onChartHover(event: MouseEvent) {
-  const svg = (event.currentTarget as SVGElement)
-  const rect = svg.getBoundingClientRect()
-  const mouseX = event.clientX - rect.left
+function getClosestIndex(clientX: number, svgEl: SVGElement) {
+  const rect = svgEl.getBoundingClientRect()
+  const mouseX = clientX - rect.left
   const { data } = filteredChartData.value
   const scaleX = chartWidth / rect.width
 
@@ -112,12 +111,28 @@ function onChartHover(event: MouseEvent) {
       closest = i
     }
   }
-  hoverIndex.value = closest
+  return closest
+}
+
+function onChartHover(event: MouseEvent) {
+  hoverIndex.value = getClosestIndex(event.clientX, event.currentTarget as SVGElement)
+}
+
+function onChartTouch(event: TouchEvent) {
+  if (event.touches.length > 0) {
+    hoverIndex.value = getClosestIndex(event.touches[0].clientX, event.currentTarget as SVGElement)
+  }
 }
 
 function onChartLeave() {
   hoverIndex.value = null
 }
+
+const hoveredEntry = computed(() => {
+  if (hoverIndex.value === null) return null
+  const d = filteredChartData.value.data[hoverIndex.value]
+  return d ?? null
+})
 </script>
 
 <template>
@@ -189,6 +204,8 @@ function onChartLeave() {
             class="interactive-chart"
             @mousemove="onChartHover"
             @mouseleave="onChartLeave"
+            @touchmove.prevent="onChartTouch"
+            @touchend="onChartLeave"
           >
             <defs>
               <filter id="lineGlow">
@@ -273,6 +290,12 @@ function onChartLeave() {
               {{ new Date(d.date).getFullYear() }}
             </text>
           </svg>
+
+          <!-- Mobile tooltip below chart -->
+          <div v-if="hoveredEntry" class="mobile-tooltip">
+            <span class="mobile-tooltip-date">{{ formatDate(hoveredEntry.date) }}</span>
+            <span class="mobile-tooltip-price">Rs {{ formatPriceShort(hoveredEntry.price_per_gram) }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -559,6 +582,10 @@ html.dark .tooltip-bg {
   font-family: var(--font-display);
 }
 
+.mobile-tooltip {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .massive-title {
     font-size: 80px;
@@ -607,6 +634,31 @@ html.dark .tooltip-bg {
   .range-switcher button {
     flex: 1;
     text-align: center;
+  }
+  .chart-axis-text {
+    font-size: 36px;
+  }
+  .chart-tooltip {
+    display: none;
+  }
+  .mobile-tooltip {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    min-height: 44px;
+    font-family: var(--font);
+  }
+  .mobile-tooltip-date {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .mobile-tooltip-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: var(--font-display);
   }
 }
 </style>
