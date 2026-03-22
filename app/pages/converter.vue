@@ -283,7 +283,7 @@ html.dark .meta-badge {
 }
 
 .input-wrapper {
-  display: flex;
+  display: inline-flex;
   align-items: baseline;
   gap: 16px;
   border-bottom: 2px solid var(--border);
@@ -304,7 +304,7 @@ html.dark .meta-badge {
   background: transparent;
   border: none;
   outline: none;
-  width: 100%;
+  width: 240px;
   padding: 0;
   line-height: 1;
 }
@@ -313,6 +313,7 @@ html.dark .meta-badge {
   font-family: var(--font-display);
   font-size: 32px;
   font-style: italic;
+  font-weight: 300;
   color: var(--text-muted);
 }
 
@@ -496,6 +497,7 @@ html.dark .total-price {
   }
   .massive-input {
     font-size: 60px;
+    width: 160px;
   }
   .result-item {
     flex-direction: column;
