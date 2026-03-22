@@ -46,6 +46,7 @@ function applyTheme() {
             <NuxtLink to="/" :class="{ active: route.path === '/' }">Overview</NuxtLink>
             <NuxtLink to="/coins" :class="{ active: route.path === '/coins' }">Coins</NuxtLink>
             <NuxtLink to="/history" :class="{ active: route.path === '/history' }" class="hide-mobile">History</NuxtLink>
+            <NuxtLink to="/converter" :class="{ active: route.path === '/converter' }" class="hide-mobile">Converter</NuxtLink>
           </nav>
         </div>
         <div class="header-actions">
