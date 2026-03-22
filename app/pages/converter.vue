@@ -49,557 +49,465 @@ function totalPrice(spec: CaratSpec): number {
 }
 
 const purityPercent = (spec: CaratSpec) => (spec.purity * 100).toFixed(2).replace(/\.?0+$/, '') + '%'
-
-const hoveredKarat = ref<string | null>(null)
 </script>
 
 <template>
-  <main class="page">
-    <div class="page-inner">
-      <header class="page-header">
-        <div class="header-meta">
-          <span v-if="currentPrice">Updated {{ timeAgo(currentPrice.date) }}</span>
-          <span v-else-if="coreLoading">Loading…</span>
+  <main class="luxury-page">
+    <div class="hero-container" v-if="currentPrice">
+      <div class="hero-content">
+        <div class="meta-badge">
+          <span>Updated {{ timeAgo(currentPrice.date) }}</span>
         </div>
-        <h1 class="page-title">
-          <span class="title-light">Carat</span><br />
+        
+        <h1 class="massive-title">
+          <span class="text-light">Carat</span><br/>
           Converter
         </h1>
-        <p class="page-subtitle">
-          Calculate the industrial market value of gold across different carats,
-          based on the latest Bank of Mauritius prices.
+
+        <p class="page-description">
+          Calculate the industrial market value of gold across different purities based on the latest Bank of Mauritius valuations.
         </p>
-        <div v-if="currentPrice" class="base-price-row">
-          <span class="base-label">24K reference price</span>
-          <span class="base-value">Rs {{ formatPriceShort(currentPrice.price_per_gram) }}<span class="base-unit">/g</span></span>
-          <span class="base-date">as of {{ formatDate(currentPrice.date) }}</span>
-        </div>
-      </header>
 
-      <section class="input-section">
-        <div class="weight-group">
-          <label class="weight-label">Weight</label>
-          <div class="weight-input-row">
-            <input
-              v-model.number="weight"
-              type="number"
-              min="0"
-              step="0.01"
-              class="weight-input"
-              placeholder="0"
-            />
-            <div class="unit-toggle">
-              <button
-                v-for="u in UNITS"
-                :key="u.short"
-                :class="{ active: selectedUnit === u.short }"
-                @click="selectedUnit = u.short"
-              >
-                {{ u.label }}
-              </button>
+        <div class="conversion-base">
+          <div class="input-group">
+            <div class="input-header">
+              <span class="label">Enter Weight</span>
+              <div class="unit-selector">
+                <button
+                  v-for="u in UNITS"
+                  :key="u.short"
+                  :class="{ active: selectedUnit === u.short }"
+                  @click="selectedUnit = u.short"
+                >
+                  {{ u.label }}
+                </button>
+              </div>
             </div>
+            <div class="input-wrapper">
+              <input
+                v-model.number="weight"
+                type="number"
+                min="0"
+                step="0.01"
+                class="massive-input"
+                placeholder="0"
+              />
+              <span class="unit-label">{{ selectedUnit }}</span>
+            </div>
+            <p v-if="selectedUnit !== 'g' && (weight ?? 0) > 0" class="equivalence">
+              Approximately {{ weightInGrams.toFixed(4) }} grams
+            </p>
           </div>
-          <p v-if="selectedUnit !== 'g' && (weight ?? 0) > 0" class="weight-equiv">
-            = {{ weightInGrams.toFixed(4) }} g
-          </p>
         </div>
-      </section>
+      </div>
 
-      <section class="results-section">
-        <div
-          v-if="!currentPrice && !coreLoading"
-          class="no-data"
-        >
-          Could not load price data.
-        </div>
-
-        <div v-else-if="coreLoading" class="loading-state">
-          <div class="loading-bar" />
-        </div>
-
-        <div v-else class="carat-grid">
-          <div
-            v-for="spec in CARATS"
-            :key="spec.label"
-            class="carat-card"
-            :class="{ hovered: hoveredKarat === spec.label, 'is-24k': spec.karat === 24 }"
-            @mouseenter="hoveredKarat = spec.label"
-            @mouseleave="hoveredKarat = null"
+      <div class="results-visual">
+        <div class="results-list">
+          <div class="section-header">
+            <h3 class="section-heading">Market Valuations</h3>
+            <p class="section-sub">Calculated for {{ weight || 0 }} {{ selectedUnit }}</p>
+          </div>
+          <div 
+            v-for="spec in CARATS" 
+            :key="spec.label" 
+            class="result-item"
+            :class="{ 'is-base': spec.karat === 24 }"
           >
-            <div class="card-top">
-              <div class="karat-badge" :class="`k-${spec.karat}`">{{ spec.label }}</div>
-              <div class="purity-bar-wrap">
-                <div class="purity-bar-track">
-                  <div
-                    class="purity-bar-fill"
-                    :style="{ width: `${spec.purity * 100}%` }"
-                  />
-                </div>
-                <span class="purity-pct">{{ purityPercent(spec) }}</span>
+            <div class="result-info">
+              <div class="karat-row">
+                <span class="result-karat">{{ spec.label }}</span>
+                <span v-if="spec.dataKey" class="live-tag">Official</span>
               </div>
+              <span class="result-purity">{{ purityPercent(spec) }} purity ratio</span>
             </div>
-
-            <div class="card-prices">
-              <div class="price-line">
-                <span class="price-desc">per gram</span>
-                <span class="price-val">Rs {{ formatPriceShort(pricePerGram(spec)) }}</span>
-              </div>
-              <div class="price-line total" v-if="(weight ?? 0) > 0">
-                <span class="price-desc">
-                  {{ (weight ?? 0).toLocaleString() }} {{ selectedUnit }}
-                  <template v-if="selectedUnit !== 'g'">
-                    ({{ weightInGrams.toFixed(2) }}g)
-                  </template>
-                </span>
-                <span class="price-val total-val">Rs {{ formatPriceShort(totalPrice(spec)) }}</span>
-              </div>
-            </div>
-
-            <div v-if="spec.dataKey" class="card-badge-live">
-              <span>live</span>
-            </div>
-            <div v-else class="card-badge-calc">
-              <span>calculated</span>
+            <div class="result-pricing">
+              <div class="total-price">Rs {{ formatPriceShort(totalPrice(spec)) }}</div>
+              <div class="unit-price">Rs {{ formatPriceShort(pricePerGram(spec)) }} / gram</div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <footer class="converter-note">
-        <p>
-          24K, 22K, 21K, and 18K prices are sourced directly from the
-          <a href="https://www.bom.mu/industrial-gold" target="_blank" rel="noopener noreferrer" class="link-gold">Bank of Mauritius</a>.
-          14K, 10K, and 9K prices are calculated using standard purity ratios relative to 24K.
-        </p>
-      </footer>
+    <div v-else-if="coreLoading" class="loading-wrap">
+      <div class="loading-text">Synchronizing market data...</div>
     </div>
   </main>
 </template>
 
 <style scoped>
-.page {
+.luxury-page {
+  position: relative;
+  overflow-x: hidden;
   min-height: calc(100vh - 72px);
-  padding: 64px 24px 80px;
+  display: flex;
+  align-items: center;
 }
 
-.page-inner {
-  max-width: 860px;
+.luxury-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  mask-image: linear-gradient(to right, black 5%, transparent 60%);
+  -webkit-mask-image: linear-gradient(to right, black 5%, transparent 60%);
+}
+
+html.dark .luxury-page::before {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.hero-container {
+  max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+  padding: 80px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 100px;
+  align-items: center;
+  z-index: 1;
 }
 
-/* Header */
-.page-header {
-  margin-bottom: 48px;
-}
-
-.header-meta {
-  font-size: 12px;
+.meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gold-accent);
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--gold-accent);
-  margin-bottom: 20px;
+  margin-bottom: 32px;
 }
 
-html.dark .header-meta {
+html.dark .meta-badge {
   color: var(--gold-light);
 }
 
-.page-title {
+.massive-title {
   font-family: var(--font-display);
-  font-size: 72px;
+  font-size: 110px;
   line-height: 0.9;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   letter-spacing: -0.02em;
 }
 
-.title-light {
+.text-light {
   font-weight: 300;
   font-style: italic;
   color: var(--text-secondary);
 }
 
-.page-subtitle {
-  font-size: 16px;
+.page-description {
+  font-size: 18px;
   color: var(--text-secondary);
-  max-width: 520px;
+  max-width: 480px;
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: 64px;
 }
 
-.base-price-row {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--gold-color);
-  border-radius: 0 6px 6px 0;
-  flex-wrap: wrap;
+/* Input Styles */
+.input-group {
+  max-width: 500px;
 }
 
-.base-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.base-value {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--gold-color);
-}
-
-html.dark .base-value {
-  color: var(--gold-light);
-}
-
-.base-unit {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--text-muted);
-  font-family: var(--font);
-  margin-left: 2px;
-}
-
-.base-date {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* Input section */
-.input-section {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 28px 28px 24px;
-  margin-bottom: 32px;
-}
-
-.weight-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-}
-
-.weight-input-row {
+.input-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  margin-bottom: 24px;
 }
 
-.weight-input {
-  font-family: var(--font-display);
-  font-size: 40px;
-  font-weight: 600;
-  color: var(--text);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid var(--border);
-  outline: none;
-  width: 200px;
-  padding: 4px 0;
-  transition: border-color 0.2s;
-  -moz-appearance: textfield;
-}
-
-.weight-input::-webkit-outer-spin-button,
-.weight-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-}
-
-.weight-input:focus {
-  border-bottom-color: var(--gold-color);
-}
-
-.unit-toggle {
-  display: flex;
-  gap: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.unit-toggle button {
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
-  border-right: 1px solid var(--border);
-}
-
-.unit-toggle button:last-child {
-  border-right: none;
-}
-
-.unit-toggle button:hover {
-  color: var(--text);
-  background: var(--row-hover);
-}
-
-.unit-toggle button.active {
-  background: var(--gold-color);
-  color: #000;
-  font-weight: 600;
-}
-
-html.dark .unit-toggle button.active {
-  background: var(--gold-accent);
-  color: #fff;
-}
-
-.weight-equiv {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-/* Results */
-.no-data {
-  text-align: center;
-  padding: 48px;
-  color: var(--text-muted);
+.input-header .label {
   font-size: 14px;
-}
-
-.loading-state {
-  padding: 48px 0;
-}
-
-.loading-bar {
-  height: 2px;
-  width: 100%;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-}
-
-.loading-bar::after {
-  content: '';
-  position: absolute;
-  left: -40%;
-  top: 0;
-  width: 40%;
-  height: 100%;
-  background: var(--gold-color);
-  border-radius: 2px;
-  animation: loading-slide 1.2s ease-in-out infinite;
-}
-
-@keyframes loading-slide {
-  0% { left: -40%; }
-  100% { left: 100%; }
-}
-
-.carat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.carat-card {
-  background: var(--bg);
-  padding: 20px;
-  position: relative;
-  transition: background 0.15s;
-}
-
-.carat-card.hovered {
-  background: var(--row-hover);
-}
-
-.carat-card.is-24k {
-  border-top: 2px solid var(--gold-color);
-}
-
-.card-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.karat-badge {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text);
-  min-width: 48px;
-}
-
-.purity-bar-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.purity-bar-track {
-  height: 4px;
-  background: var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.purity-bar-fill {
-  height: 100%;
-  background: var(--gold-color);
-  border-radius: 4px;
-  transition: width 0.4s ease;
-}
-
-.k-24 .purity-bar-fill { background: var(--gold-color); }
-.k-22 .purity-bar-fill { background: #C8A838; }
-.k-21 .purity-bar-fill { background: #C0A030; }
-.k-18 .purity-bar-fill { background: #A88A28; }
-.k-14 .purity-bar-fill { background: #907820; }
-.k-10 .purity-bar-fill { background: #786418; }
-.k-9  .purity-bar-fill { background: #685810; }
-
-.purity-pct {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.card-prices {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.price-line {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-left: 12px;
-  border-left: 2px solid var(--border);
-}
-
-.price-line.total {
-  border-left-color: var(--gold-color);
-}
-
-.price-desc {
-  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
-  font-weight: 600;
+  color: var(--text-secondary);
 }
 
-.price-val {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
+.unit-selector {
+  display: flex;
+  gap: 20px;
+}
+
+.unit-selector button {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.unit-selector button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background-color: var(--gold-color);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.unit-selector button:hover {
   color: var(--text);
 }
 
-.price-val.total-val {
-  font-size: 22px;
+.unit-selector button.active {
   color: var(--gold-color);
+  font-weight: 600;
 }
 
-html.dark .price-val.total-val {
-  color: var(--gold-light);
+.unit-selector button.active::after {
+  width: 100%;
 }
 
-.card-badge-live,
-.card-badge-calc {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+.input-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 12px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--gold-color);
+  padding-bottom: 16px;
+}
+
+.massive-input {
+  font-family: var(--font-display);
+  font-size: 80px;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 0;
+  line-height: 1;
+}
+
+.unit-label {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.equivalence {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Results Styles */
+.results-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.section-heading {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.section-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--row-border);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.result-item:hover {
+  background: var(--row-hover);
+  padding-left: 24px;
+  padding-right: 24px;
+  margin-left: -24px;
+  margin-right: -24px;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-item.is-base {
+  border-left: 4px solid var(--gold-color);
+  padding-left: 32px;
+  background: rgba(212, 175, 55, 0.03);
+}
+
+.result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.karat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-karat {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+.live-tag {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 6px;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
   border-radius: 4px;
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--gold-accent);
 }
 
-.card-badge-live {
-  color: var(--up-color);
-  background: color-mix(in srgb, var(--up-color) 10%, transparent);
+html.dark .live-tag {
+  background: rgba(229, 193, 88, 0.1);
+  color: var(--gold-light);
 }
 
-.card-badge-calc {
-  color: var(--text-muted);
-  background: var(--row-hover);
-}
-
-/* Note */
-.converter-note {
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
+.result-purity {
   font-size: 13px;
   color: var(--text-muted);
-  line-height: 1.6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.link-gold {
+.result-pricing {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.total-price {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
   color: var(--gold-color);
-  font-weight: 500;
-  transition: color 0.2s;
+  line-height: 1;
 }
 
-.link-gold:hover {
-  color: var(--gold-accent);
-  text-decoration: underline;
+html.dark .total-price {
+  color: var(--gold-light);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .page {
-    padding: 40px 16px 60px;
-  }
+.unit-price {
+  font-size: 14px;
+  color: var(--text-muted);
+}
 
-  .page-title {
-    font-size: 52px;
-  }
+.loading-wrap {
+  width: 100%;
+  text-align: center;
+  padding: 100px 0;
+}
 
-  .carat-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+.loading-text {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-style: italic;
+  color: var(--text-muted);
+}
 
-  .weight-input {
-    font-size: 32px;
-    width: 160px;
+@media (max-width: 1200px) {
+  .hero-container {
+    gap: 60px;
   }
-
-  .input-section {
-    padding: 20px 16px;
+  .massive-title {
+    font-size: 80px;
   }
 }
 
-@media (max-width: 480px) {
-  .carat-grid {
+@media (max-width: 1024px) {
+  .hero-container {
     grid-template-columns: 1fr;
+    padding-top: 60px;
+    padding-bottom: 60px;
   }
+  .massive-title {
+    font-size: 72px;
+  }
+  .results-visual {
+    margin-top: 40px;
+  }
+  .source-indicator {
+    display: none;
+  }
+}
 
-  .weight-input-row {
+@media (max-width: 768px) {
+  .massive-title {
+    font-size: 64px;
+  }
+  .massive-input {
+    font-size: 60px;
+  }
+  .result-item {
     flex-direction: column;
     align-items: flex-start;
+    gap: 20px;
+    padding: 24px 0;
+  }
+  .result-pricing {
+    text-align: left;
+  }
+  .result-karat, .total-price {
+    font-size: 28px;
   }
 }
 </style>
