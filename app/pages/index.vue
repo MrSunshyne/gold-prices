@@ -168,7 +168,7 @@ const hoveredEntry = computed(() => {
         </h1>
 
         <div class="price-showcase">
-          <div class="form-switcher">
+          <div class="form-toggle">
             <button :class="{ active: selectedForm === 'Grains' }" @click="selectedForm = 'Grains'">Grains</button>
             <button :class="{ active: selectedForm === 'Bar' }" @click="selectedForm = 'Bar'">Bar</button>
           </div>
@@ -524,18 +524,50 @@ html.dark .glass-chart-panel {
   font-size: 14px;
 }
 
-.range-switcher,
-.form-switcher {
+.form-toggle {
+  display: inline-flex;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.form-toggle button {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.form-toggle button:first-child {
+  border-right: 1.5px solid var(--border);
+}
+
+.form-toggle button:hover {
+  color: var(--text);
+}
+
+.form-toggle button.active {
+  background: var(--gold-color);
+  color: #fff;
+  font-weight: 600;
+}
+
+html.dark .form-toggle button.active {
+  color: #000;
+}
+
+.range-switcher {
   display: flex;
   gap: 20px;
 }
 
-.form-switcher {
-  margin-bottom: 16px;
-}
-
-.range-switcher button,
-.form-switcher button {
+.range-switcher button {
   font-family: var(--font);
   font-size: 13px;
   font-weight: 500;
@@ -548,8 +580,7 @@ html.dark .glass-chart-panel {
   position: relative;
 }
 
-.range-switcher button::after,
-.form-switcher button::after {
+.range-switcher button::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -561,19 +592,16 @@ html.dark .glass-chart-panel {
   border-radius: 2px;
 }
 
-.range-switcher button:hover,
-.form-switcher button:hover {
+.range-switcher button:hover {
   color: var(--text);
 }
 
-.range-switcher button.active,
-.form-switcher button.active {
+.range-switcher button.active {
   color: var(--gold-color);
   font-weight: 600;
 }
 
-.range-switcher button.active::after,
-.form-switcher button.active::after {
+.range-switcher button.active::after {
   width: 100%;
 }
 
@@ -661,14 +689,15 @@ html.dark .tooltip-bg {
     align-items: flex-start;
     gap: 16px;
   }
-  .range-switcher,
-  .form-switcher {
+  .range-switcher {
     width: 100%;
   }
-  .range-switcher button,
-  .form-switcher button {
+  .range-switcher button {
     flex: 1;
     text-align: center;
+  }
+  .form-toggle {
+    align-self: center;
   }
   .chart-axis-text {
     font-size: 36px;
