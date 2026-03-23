@@ -178,8 +178,8 @@ const hoveredEntry = computed(() => {
           <div class="trend-indicator" :class="lastChange.change >= 0 ? 'up' : 'down'">
             <svg v-if="lastChange.change >= 0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-            <span class="trend-val">Rs {{ Math.abs(lastChange.change) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
-            <span class="trend-date">since {{ formatDate(lastChange.sinceDate) }}</span>
+            <span class="trend-val">Rs {{ formatPriceShort(Math.abs(lastChange.change)) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
+            <span class="trend-date">{{ lastChange.change < 0 ? 'from peak' : 'from low' }} {{ formatDate(lastChange.sinceDate) }}</span>
           </div>
         </div>
 

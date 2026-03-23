@@ -151,21 +151,46 @@ export function useGoldPrices() {
   const currentPrice = computed(() => currentData.value)
   const currentCoins = computed(() => coins.value[0] ?? null)
 
-  // Compute last change from timeseries (newest is at end)
+  // Find the recent peak or trough to show the current trend.
+  // Scans the last 90 days to find the highest and lowest points,
+  // then picks whichever is more recent as the trend reference.
   const lastChange = computed(() => {
     if (!timeseries.value) return null
     const { dates, price_per_gram } = timeseries.value
     const len = dates.length
     if (len < 2) return null
+
     const current = price_per_gram[len - 1]
-    for (let i = len - 2; i >= 0; i--) {
-      if (price_per_gram[i] !== current) {
-        const change = +(current - price_per_gram[i]).toFixed(2)
-        const changePercent = +(((current - price_per_gram[i]) / price_per_gram[i]) * 100).toFixed(2)
-        return { change, changePercent, sinceDate: dates[i] }
-      }
+    const lookback = Math.min(90, len - 1)
+    const start = len - 1 - lookback
+
+    let peakIdx = len - 1
+    let troughIdx = len - 1
+    for (let i = start; i < len; i++) {
+      if (price_per_gram[i] > price_per_gram[peakIdx]) peakIdx = i
+      if (price_per_gram[i] < price_per_gram[troughIdx]) troughIdx = i
     }
-    return { change: 0, changePercent: 0, sinceDate: dates[0] }
+
+    // Use whichever extremum is more recent — that's the start of the current move
+    const usePeak = peakIdx > troughIdx
+    const refIdx = usePeak ? peakIdx : troughIdx
+    const refPrice = price_per_gram[refIdx]
+
+    // If the reference is the current price itself, fall back to finding last different price
+    if (refIdx === len - 1) {
+      for (let i = len - 2; i >= start; i--) {
+        if (price_per_gram[i] !== current) {
+          const change = +(current - price_per_gram[i]).toFixed(2)
+          const changePercent = +(((current - price_per_gram[i]) / price_per_gram[i]) * 100).toFixed(2)
+          return { change, changePercent, sinceDate: dates[i] }
+        }
+      }
+      return { change: 0, changePercent: 0, sinceDate: dates[len - 1] }
+    }
+
+    const change = +(current - refPrice).toFixed(2)
+    const changePercent = +((change / refPrice) * 100).toFixed(2)
+    return { change, changePercent, sinceDate: dates[refIdx] }
   })
 
   // All-time high/low from timeseries
