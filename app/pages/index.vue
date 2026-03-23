@@ -12,6 +12,25 @@ const {
   prices,
 } = useGoldPrices()
 
+const selectedForm = ref<'Grains' | 'Bar'>('Grains')
+
+const displayPrice = computed(() => {
+  if (!currentPrice.value) return null
+  if (selectedForm.value === 'Grains') return currentPrice.value.price_per_gram
+  const barForm = currentPrice.value.forms?.find(f => f.form === 'Bar')
+  return barForm?.price_per_gm ?? currentPrice.value.price_per_gram
+})
+
+const displayKarats = computed(() => {
+  const base = displayPrice.value
+  if (!base) return null
+  return {
+    '22k': Math.round(base * 22 / 24 * 100) / 100,
+    '21k': Math.round(base * 21 / 24 * 100) / 100,
+    '18k': Math.round(base * 18 / 24 * 100) / 100,
+  }
+})
+
 useHead({
   title: 'Mauritius Gold Price Index — Overview',
 })
@@ -149,8 +168,12 @@ const hoveredEntry = computed(() => {
         </h1>
 
         <div class="price-showcase">
-          <div class="price-huge">Rs {{ formatPriceShort(currentPrice.price_per_gram) }}</div>
-          <div class="price-desc">Current value per gram of 24 Karat industrial gold.</div>
+          <div class="form-switcher">
+            <button :class="{ active: selectedForm === 'Grains' }" @click="selectedForm = 'Grains'">Grains</button>
+            <button :class="{ active: selectedForm === 'Bar' }" @click="selectedForm = 'Bar'">Bar</button>
+          </div>
+          <div class="price-huge">Rs {{ formatPriceShort(displayPrice) }}</div>
+          <div class="price-desc">Current value per gram — {{ selectedForm }} price</div>
           
           <div class="trend-indicator" :class="lastChange.change >= 0 ? 'up' : 'down'">
             <svg v-if="lastChange.change >= 0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -163,15 +186,15 @@ const hoveredEntry = computed(() => {
         <div class="purity-grid">
           <div class="purity-item">
             <span class="p-label">22K Gold</span>
-            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['22k']) }}</span>
+            <span class="p-val">Rs {{ formatPriceShort(displayKarats?.['22k']) }}</span>
           </div>
           <div class="purity-item">
             <span class="p-label">21K Gold</span>
-            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['21k']) }}</span>
+            <span class="p-val">Rs {{ formatPriceShort(displayKarats?.['21k']) }}</span>
           </div>
           <div class="purity-item">
             <span class="p-label">18K Gold</span>
-            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['18k']) }}</span>
+            <span class="p-val">Rs {{ formatPriceShort(displayKarats?.['18k']) }}</span>
           </div>
           <div class="purity-item highlight">
             <span class="p-label">All-Time High</span>
@@ -501,12 +524,18 @@ html.dark .glass-chart-panel {
   font-size: 14px;
 }
 
-.range-switcher {
+.range-switcher,
+.form-switcher {
   display: flex;
   gap: 20px;
 }
 
-.range-switcher button {
+.form-switcher {
+  margin-bottom: 16px;
+}
+
+.range-switcher button,
+.form-switcher button {
   font-family: var(--font);
   font-size: 13px;
   font-weight: 500;
@@ -519,7 +548,8 @@ html.dark .glass-chart-panel {
   position: relative;
 }
 
-.range-switcher button::after {
+.range-switcher button::after,
+.form-switcher button::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -531,16 +561,19 @@ html.dark .glass-chart-panel {
   border-radius: 2px;
 }
 
-.range-switcher button:hover {
+.range-switcher button:hover,
+.form-switcher button:hover {
   color: var(--text);
 }
 
-.range-switcher button.active {
+.range-switcher button.active,
+.form-switcher button.active {
   color: var(--gold-color);
   font-weight: 600;
 }
 
-.range-switcher button.active::after {
+.range-switcher button.active::after,
+.form-switcher button.active::after {
   width: 100%;
 }
 
@@ -628,10 +661,12 @@ html.dark .tooltip-bg {
     align-items: flex-start;
     gap: 16px;
   }
-  .range-switcher {
+  .range-switcher,
+  .form-switcher {
     width: 100%;
   }
-  .range-switcher button {
+  .range-switcher button,
+  .form-switcher button {
     flex: 1;
     text-align: center;
   }
