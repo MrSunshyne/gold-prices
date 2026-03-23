@@ -12,6 +12,25 @@ const {
   prices,
 } = useGoldPrices()
 
+const selectedForm = ref<'Grains' | 'Bar'>('Grains')
+
+const displayPrice = computed(() => {
+  if (!currentPrice.value) return null
+  if (selectedForm.value === 'Grains') return currentPrice.value.price_per_gram
+  const barForm = currentPrice.value.forms?.find(f => f.form === 'Bar')
+  return barForm?.price_per_gm ?? currentPrice.value.price_per_gram
+})
+
+const displayKarats = computed(() => {
+  const base = displayPrice.value
+  if (!base) return null
+  return {
+    '22k': Math.round(base * 22 / 24 * 100) / 100,
+    '21k': Math.round(base * 21 / 24 * 100) / 100,
+    '18k': Math.round(base * 18 / 24 * 100) / 100,
+  }
+})
+
 useHead({
   title: 'Mauritius Gold Price Index — Overview',
 })
@@ -149,29 +168,33 @@ const hoveredEntry = computed(() => {
         </h1>
 
         <div class="price-showcase">
-          <div class="price-huge">Rs {{ formatPriceShort(currentPrice.price_per_gram) }}</div>
-          <div class="price-desc">Current value per gram of 24 Karat industrial gold.</div>
+          <div class="form-toggle">
+            <button :class="{ active: selectedForm === 'Grains' }" @click="selectedForm = 'Grains'">Grains</button>
+            <button :class="{ active: selectedForm === 'Bar' }" @click="selectedForm = 'Bar'">Bar</button>
+          </div>
+          <div class="price-huge">Rs {{ formatPriceShort(displayPrice) }}</div>
+          <div class="price-desc">Current value per gram — {{ selectedForm }} price</div>
           
           <div class="trend-indicator" :class="lastChange.change >= 0 ? 'up' : 'down'">
             <svg v-if="lastChange.change >= 0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-            <span class="trend-val">Rs {{ Math.abs(lastChange.change) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
-            <span class="trend-date">since {{ formatDate(lastChange.sinceDate) }}</span>
+            <span class="trend-val">Rs {{ formatPriceShort(Math.abs(lastChange.change)) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
+            <span class="trend-date">{{ lastChange.change < 0 ? 'from peak' : 'from low' }} {{ formatDate(lastChange.sinceDate) }}</span>
           </div>
         </div>
 
         <div class="purity-grid">
           <div class="purity-item">
             <span class="p-label">22K Gold</span>
-            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['22k']) }}</span>
+            <span class="p-val">Rs {{ formatPriceShort(displayKarats?.['22k']) }}</span>
           </div>
           <div class="purity-item">
             <span class="p-label">21K Gold</span>
-            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['21k']) }}</span>
+            <span class="p-val">Rs {{ formatPriceShort(displayKarats?.['21k']) }}</span>
           </div>
           <div class="purity-item">
             <span class="p-label">18K Gold</span>
-            <span class="p-val">Rs {{ formatPriceShort(currentPrice.karats['18k']) }}</span>
+            <span class="p-val">Rs {{ formatPriceShort(displayKarats?.['18k']) }}</span>
           </div>
           <div class="purity-item highlight">
             <span class="p-label">All-Time High</span>
@@ -501,6 +524,44 @@ html.dark .glass-chart-panel {
   font-size: 14px;
 }
 
+.form-toggle {
+  display: inline-flex;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.form-toggle button {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.form-toggle button:first-child {
+  border-right: 1.5px solid var(--border);
+}
+
+.form-toggle button:hover {
+  color: var(--text);
+}
+
+.form-toggle button.active {
+  background: var(--gold-color);
+  color: #fff;
+  font-weight: 600;
+}
+
+html.dark .form-toggle button.active {
+  color: #000;
+}
+
 .range-switcher {
   display: flex;
   gap: 20px;
@@ -634,6 +695,9 @@ html.dark .tooltip-bg {
   .range-switcher button {
     flex: 1;
     text-align: center;
+  }
+  .form-toggle {
+    align-self: center;
   }
   .chart-axis-text {
     font-size: 36px;
