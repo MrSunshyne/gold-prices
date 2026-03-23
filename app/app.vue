@@ -91,6 +91,12 @@ function applyTheme() {
           </svg>
           <span>Mauritius Gold Prices</span>
         </div>
+        <nav class="footer-nav">
+          <NuxtLink to="/">Overview</NuxtLink>
+          <NuxtLink to="/coins">Coins</NuxtLink>
+          <NuxtLink to="/history">History</NuxtLink>
+          <NuxtLink to="/converter">Converter</NuxtLink>
+        </nav>
         <div class="footer-links">
           <p>
             Data sourced from the
@@ -347,6 +353,10 @@ a {
   height: 20px;
 }
 
+.footer-nav {
+  display: none;
+}
+
 .footer-links {
   text-align: right;
   font-size: 14px;
@@ -423,6 +433,23 @@ a {
     text-align: center;
   }
   
+  .footer-nav {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .footer-nav a {
+    color: var(--text-secondary);
+    transition: color 0.2s;
+  }
+
+  .footer-nav a:hover {
+    color: var(--text);
+  }
+
   .footer-links {
     text-align: center;
     align-items: center;
