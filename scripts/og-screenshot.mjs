@@ -41,6 +41,10 @@ await page.evaluate(() => {
   const purityGrid = document.querySelector('.purity-grid')
   if (purityGrid) purityGrid.style.display = 'none'
 
+  // Replace title text
+  const title = document.querySelector('.massive-title')
+  if (title) title.innerHTML = '<span class="text-light">Mauritius</span><br/>Gold Prices'
+
   // Adjust the page to center content vertically
   const luxPage = document.querySelector('.luxury-page')
   if (luxPage) {
