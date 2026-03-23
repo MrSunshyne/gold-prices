@@ -65,7 +65,7 @@ const filteredChartData = computed(() => {
 })
 
 const chartWidth = 1200
-const chartHeight = 500
+const chartHeight = 800
 const padLeft = 90
 const padRight = 10
 const padTop = 40
@@ -147,6 +147,26 @@ function onChartLeave() {
   hoverIndex.value = null
 }
 
+// Label positions as percentages for HTML overlay (works with preserveAspectRatio="none")
+const yLabelPositions = computed(() => {
+  return yTicks.value.map(tick => ({
+    tick,
+    top: (yScale(tick, filteredChartData.value.minVal, filteredChartData.value.maxVal) / chartHeight) * 100,
+  }))
+})
+
+const xLabelPositions = computed(() => {
+  const { data } = filteredChartData.value
+  if (data.length < 2) return []
+  const step = Math.floor(data.length / 4)
+  return data
+    .filter((_, idx) => idx % step === 0)
+    .map(d => ({
+      label: new Date(d.date).getFullYear(),
+      left: (xScale(data.indexOf(d), data.length) / chartWidth) * 100,
+    }))
+})
+
 const hoveredEntry = computed(() => {
   if (hoverIndex.value === null) return null
   const d = filteredChartData.value.data[hoverIndex.value]
@@ -222,8 +242,10 @@ const hoveredEntry = computed(() => {
             </div>
           </div>
 
+          <div class="chart-area">
           <svg
             :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
+            preserveAspectRatio="none"
             class="interactive-chart"
             @mousemove="onChartHover"
             @mouseleave="onChartLeave"
@@ -253,17 +275,6 @@ const hoveredEntry = computed(() => {
               stroke-dasharray="4 4"
               opacity="0.5"
             />
-
-            <text
-              v-for="tick in yTicks"
-              :key="'label-' + tick"
-              :x="padLeft - 16"
-              :y="yScale(tick, filteredChartData.minVal, filteredChartData.maxVal) + 4"
-              text-anchor="end"
-              class="chart-axis-text"
-            >
-              {{ tick.toLocaleString() }}
-            </text>
 
             <path
               :d="chartPath"
@@ -302,17 +313,27 @@ const hoveredEntry = computed(() => {
               </g>
             </g>
 
-            <text
-              v-for="(d, i) in filteredChartData.data.filter((_, idx) => idx % Math.floor(filteredChartData.data.length / 5) === 0)"
-              :key="'x-' + d.date"
-              :x="xScale(filteredChartData.data.indexOf(d), filteredChartData.data.length)"
-              :y="chartHeight - 12"
-              text-anchor="middle"
-              class="chart-axis-text"
-            >
-              {{ new Date(d.date).getFullYear() }}
-            </text>
           </svg>
+
+          <!-- HTML axis labels (not distorted by preserveAspectRatio="none") -->
+          <div class="chart-labels-y">
+            <span
+              v-for="lbl in yLabelPositions"
+              :key="lbl.tick"
+              class="axis-label"
+              :style="{ top: lbl.top + '%' }"
+            >{{ lbl.tick.toLocaleString() }}</span>
+          </div>
+          <div class="chart-labels-x">
+            <span
+              v-for="lbl in xLabelPositions"
+              :key="lbl.label + '-' + lbl.left"
+              class="axis-label"
+              :style="{ left: lbl.left + '%' }"
+            >{{ lbl.label }}</span>
+          </div>
+
+          </div>
 
           <!-- Mobile tooltip below chart -->
           <div v-if="hoveredEntry" class="mobile-tooltip">
@@ -481,7 +502,7 @@ html.dark .price-huge {
 .hero-visual {
   position: relative;
   width: 100%;
-  height: 500px;
+  height: auto;
   display: flex;
   align-items: center;
 }
@@ -605,18 +626,55 @@ html.dark .form-toggle button.active {
   width: 100%;
 }
 
+.chart-area {
+  position: relative;
+}
+
 .interactive-chart {
   width: 100%;
-  height: auto;
+  height: 60vh;
+  min-height: 400px;
+  max-height: 700px;
   display: block;
   overflow: visible;
 }
 
-.chart-axis-text {
+.chart-labels-y {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.chart-labels-y .axis-label {
+  position: absolute;
+  right: calc(100% - (90 / 1200 * 100%));
+  transform: translateY(-50%);
+  padding-right: 12px;
   font-size: 12px;
-  fill: var(--text-muted);
+  color: var(--text-muted);
+  font-family: var(--font);
+  white-space: nowrap;
+}
+
+.chart-labels-x {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.chart-labels-x .axis-label {
+  position: absolute;
+  bottom: 4px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--text-muted);
   font-family: var(--font);
 }
+
 
 .tooltip-bg {
   fill: var(--bg);
@@ -684,6 +742,11 @@ html.dark .tooltip-bg {
     padding: 24px 16px;
     border-radius: 24px;
   }
+  .interactive-chart {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
   .panel-header {
     flex-direction: column;
     align-items: flex-start;
@@ -699,8 +762,10 @@ html.dark .tooltip-bg {
   .form-toggle {
     align-self: center;
   }
-  .chart-axis-text {
-    font-size: 36px;
+  .interactive-chart {
+    height: auto;
+    min-height: 0;
+    max-height: none;
   }
   .chart-tooltip {
     display: none;
