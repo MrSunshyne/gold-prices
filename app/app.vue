@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const { DATA_SOURCE, fetchCoreData } = useGoldPrices()
+const { DATA_SOURCE, fetchCurrentPrice, fetchCoreData } = useGoldPrices()
+
+// Fetched while prerendering so today's price is in the HTML; the client
+// refreshes everything on mount
+await callOnce('current-price', fetchCurrentPrice)
 
 const route = useRoute()
 

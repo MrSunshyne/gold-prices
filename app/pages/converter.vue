@@ -56,7 +56,7 @@ const purityPercent = (spec: CaratSpec) => (spec.purity * 100).toFixed(2).replac
     <div class="hero-container" v-if="currentPrice">
       <div class="hero-content">
         <div class="meta-badge">
-          <span>Updated {{ timeAgo(currentPrice.date) }}</span>
+          <span>Updated <ClientOnly>{{ timeAgo(currentPrice.date) }}<template #fallback>{{ formatDate(currentPrice.date) }}</template></ClientOnly></span>
         </div>
         
         <h1 class="massive-title">

@@ -3,7 +3,6 @@ const {
   currentPrice,
   lastChange,
   allTimeHigh,
-  allTimeLow,
   chartData,
   formatDate,
   formatPrice,
@@ -30,8 +29,21 @@ const displayKarats = computed(() => {
   }
 })
 
-useHead({
-  title: 'Mauritius Gold Price Index — Overview',
+// Today's price in the title and description, so search results and link
+// previews show it
+useSeoMeta({
+  title: () => currentPrice.value
+    ? `Gold Price in Mauritius Today: Rs ${formatPriceShort(currentPrice.value.price_per_gram)}/g (${formatDate(currentPrice.value.date)})`
+    : 'Mauritius Gold Price Index — Overview',
+  description: () => {
+    const p = currentPrice.value
+    if (!p) return 'Daily gold prices in Mauritius since 2004.'
+    const k = p.karats
+    return `Bank of Mauritius industrial gold on ${formatDate(p.date)}: 24K Rs ${formatPriceShort(k['24k'])} per gram, 22K Rs ${formatPriceShort(k['22k'])}, 21K Rs ${formatPriceShort(k['21k'])}, 18K Rs ${formatPriceShort(k['18k'])}. Daily prices since 2004.`
+  },
+  ogDescription: () => currentPrice.value
+    ? `24K gold in Mauritius: Rs ${formatPriceShort(currentPrice.value.price_per_gram)} per gram on ${formatDate(currentPrice.value.date)}. Daily prices since 2004.`
+    : 'Daily gold prices in Mauritius since 2004.',
 })
 
 const hoverIndex = ref<number | null>(null)
@@ -195,10 +207,11 @@ const hoveredEntry = computed(() => {
 
 <template>
   <main class="luxury-page">
-    <div class="hero-container" v-if="currentPrice && allTimeHigh && allTimeLow && lastChange">
+    <div class="hero-container" v-if="currentPrice">
       <div class="hero-content">
         <div class="meta-badge">
-          <span>Updated {{ timeAgo(currentPrice.date) }}</span>
+          <!-- Relative time depends on when the page is viewed, not built -->
+          <span>Updated <ClientOnly>{{ timeAgo(currentPrice.date) }}<template #fallback>{{ formatDate(currentPrice.date) }}</template></ClientOnly></span>
         </div>
         
         <h1 class="massive-title">
@@ -214,7 +227,7 @@ const hoveredEntry = computed(() => {
           <div class="price-huge">Rs {{ formatPriceShort(displayPrice) }}</div>
           <div class="price-desc">Current value per gram — {{ selectedForm }} price</div>
           
-          <div class="trend-indicator" :class="lastChange.change >= 0 ? 'up' : 'down'">
+          <div v-if="lastChange" class="trend-indicator" :class="lastChange.change >= 0 ? 'up' : 'down'">
             <svg v-if="lastChange.change >= 0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
             <span class="trend-val">Rs {{ formatPriceShort(Math.abs(lastChange.change)) }} ({{ Math.abs(lastChange.changePercent) }}%)</span>
@@ -237,7 +250,7 @@ const hoveredEntry = computed(() => {
           </div>
           <div class="purity-item highlight">
             <span class="p-label">All-Time High</span>
-            <span class="p-val">Rs {{ formatPriceShort(allTimeHigh.price_per_gram) }}</span>
+            <span class="p-val">{{ allTimeHigh ? `Rs ${formatPriceShort(allTimeHigh.price_per_gram)}` : '…' }}</span>
           </div>
         </div>
       </div>
