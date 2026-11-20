@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { DATA_SOURCE, fetchCurrentPrice, fetchCoreData } = useGoldPrices()
+const { DATA_SOURCE, currentPrice, formatDate, fetchCurrentPrice, fetchCoreData } = useGoldPrices()
 
 // Fetched while prerendering so today's price is in the HTML; the client
 // refreshes everything on mount
@@ -8,12 +8,28 @@ await callOnce('current-price', fetchCurrentPrice)
 const route = useRoute()
 
 const dark = ref(false)
+const mounted = ref(false)
 
 onMounted(() => {
+  mounted.value = true
   dark.value = localStorage.getItem('theme') === 'dark'
     || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
   applyTheme()
   fetchCoreData()
+})
+
+// Weekdays since the latest price, counted up to today in Mauritius. BOM
+// publishes every business day, so more than 2 means something is off
+// (public holidays can trigger it too, hence the hedged wording).
+const staleBusinessDays = computed(() => {
+  if (!mounted.value || !currentPrice.value) return 0
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Indian/Mauritius' })
+  let days = 0
+  const d = new Date(`${currentPrice.value.date}T00:00:00Z`)
+  for (d.setUTCDate(d.getUTCDate() + 1); d.toISOString().slice(0, 10) <= today; d.setUTCDate(d.getUTCDate() + 1)) {
+    if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) days++
+  }
+  return days
 })
 
 function toggleDark() {
@@ -77,6 +93,12 @@ function applyTheme() {
         </div>
       </div>
     </header>
+
+    <div v-if="staleBusinessDays > 2 && currentPrice" class="stale-banner" role="status">
+      No new prices since {{ formatDate(currentPrice.date) }} ({{ staleBusinessDays }} business days).
+      The Bank of Mauritius may not have published, or collecting the data is failing:
+      <a href="https://github.com/MrSunshyne/mauritius-dataset-gold/issues" target="_blank" rel="noopener noreferrer">check the dataset status</a>.
+    </div>
 
     <NuxtPage />
 
@@ -226,6 +248,20 @@ a {
   top: 0;
   z-index: 50;
   border-bottom: 1px solid var(--border);
+}
+
+.stale-banner {
+  max-width: 1200px;
+  margin: 16px auto 0;
+  padding: 12px 24px;
+  border-left: 3px solid var(--down-color);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.stale-banner a {
+  color: var(--text);
+  text-decoration: underline;
 }
 
 .header-inner {
