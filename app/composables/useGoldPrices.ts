@@ -54,6 +54,14 @@ export interface YearSummary {
   change_pct: number
 }
 
+export interface InternationalTimeseriesData {
+  dates: string[]
+  comex_usd_per_oz: number[]
+  usd_mur: number[]
+  world_price_per_gram: number[]
+  premium_pct: number[]
+}
+
 export interface IndexData {
   total_entries: number
   first_date: string
@@ -79,6 +87,7 @@ const currentCoins = ref<GoldCoinEntry | null>(null)
 const coinsTimeseries = ref<CoinsTimeseriesData | null>(null)
 const coreLoading = ref(true)
 const coinsLoaded = ref(false)
+const international = ref<InternationalTimeseriesData | null>(null)
 
 const sortField = ref<SortField>('date')
 const sortDirection = ref<SortDirection>('desc')
@@ -142,6 +151,20 @@ export function useGoldPrices() {
     }
   }
 
+  // Lazy fetch the world price comparison (~220 KB)
+  async function fetchInternational() {
+    if (international.value) return
+    try {
+      const res = await fetch(`${BASE_URL}/international-timeseries.json`)
+      if (!res.ok) return
+      const data: InternationalTimeseriesData = await res.json()
+      if (data?.dates?.length) international.value = data
+    }
+    catch {
+      // Silent failure
+    }
+  }
+
   // Lazy fetch coin data for the coins page (~200 KB)
   async function fetchCoins() {
     if (coinsLoaded.value) return
@@ -165,6 +188,13 @@ export function useGoldPrices() {
   }
 
   const currentPrice = computed(() => currentData.value)
+
+  // Grains price on a given date from the timeseries, once loaded
+  function grainsPriceOn(date: string): number | null {
+    if (!timeseries.value) return null
+    const i = timeseries.value.dates.lastIndexOf(date)
+    return i === -1 ? null : timeseries.value.price_per_gram[i]
+  }
 
   // Daily prices for the selected form, oldest first
   const priceSeries = computed(() => {
@@ -312,6 +342,8 @@ export function useGoldPrices() {
     sortDirection,
     coreLoading,
     coinsLoaded,
+    international,
+    grainsPriceOn,
     totalEntries,
     firstDate,
     lastDate,
@@ -321,6 +353,7 @@ export function useGoldPrices() {
     fetchCurrentPrice,
     fetchCoreData,
     fetchCoins,
+    fetchInternational,
     toggleSort,
     // Formatters
     formatDate,
