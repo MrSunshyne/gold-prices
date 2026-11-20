@@ -151,46 +151,37 @@ export function useGoldPrices() {
   const currentPrice = computed(() => currentData.value)
   const currentCoins = computed(() => coins.value[0] ?? null)
 
-  // Find the recent peak or trough to show the current trend.
-  // Scans the last 90 days to find the highest and lowest points,
-  // then picks whichever is more recent as the trend reference.
+  // Show the current trend relative to where it started: the last peak or low
+  // that the price has since moved away from by at least SWING_THRESHOLD.
+  // Smaller wiggles don't count as a new move, so a one-day drop is reported
+  // as part of the decline from the last real peak rather than "from yesterday".
+  const SWING_THRESHOLD = 0.05
   const lastChange = computed(() => {
     if (!timeseries.value) return null
-    const { dates, price_per_gram } = timeseries.value
-    const len = dates.length
+    const { dates, price_per_gram: prices } = timeseries.value
+    const len = prices.length
     if (len < 2) return null
 
-    const current = price_per_gram[len - 1]
-    const lookback = Math.min(90, len - 1)
-    const start = len - 1 - lookback
-
-    let peakIdx = len - 1
-    let troughIdx = len - 1
-    for (let i = start; i < len; i++) {
-      if (price_per_gram[i] > price_per_gram[peakIdx]) peakIdx = i
-      if (price_per_gram[i] < price_per_gram[troughIdx]) troughIdx = i
-    }
-
-    // Use whichever extremum is more recent — that's the start of the current move
-    const usePeak = peakIdx > troughIdx
-    const refIdx = usePeak ? peakIdx : troughIdx
-    const refPrice = price_per_gram[refIdx]
-
-    // If the reference is the current price itself, fall back to finding last different price
-    if (refIdx === len - 1) {
-      for (let i = len - 2; i >= start; i--) {
-        if (price_per_gram[i] !== current) {
-          const change = +(current - price_per_gram[i]).toFixed(2)
-          const changePercent = +(((current - price_per_gram[i]) / price_per_gram[i]) * 100).toFixed(2)
-          return { change, changePercent, sinceDate: dates[i] }
-        }
+    let pivot = 0 // start of the current move (a peak or a low)
+    let extreme = 0 // highest (rising) or lowest (falling) price since the pivot
+    let rising = true
+    for (let i = 1; i < len; i++) {
+      const price = prices[i]
+      if (rising ? price > prices[extreme] : price < prices[extreme]) {
+        extreme = i
       }
-      return { change: 0, changePercent: 0, sinceDate: dates[len - 1] }
+      else if (rising ? price <= prices[extreme] / (1 + SWING_THRESHOLD) : price >= prices[extreme] * (1 + SWING_THRESHOLD)) {
+        // Reversed far enough: the extreme becomes the start of a new move
+        pivot = extreme
+        extreme = i
+        rising = !rising
+      }
     }
 
-    const change = +(current - refPrice).toFixed(2)
+    const refPrice = prices[pivot]
+    const change = +(prices[len - 1] - refPrice).toFixed(2)
     const changePercent = +((change / refPrice) * 100).toFixed(2)
-    return { change, changePercent, sinceDate: dates[refIdx] }
+    return { change, changePercent, sinceDate: dates[pivot] }
   })
 
   // All-time high/low from timeseries
