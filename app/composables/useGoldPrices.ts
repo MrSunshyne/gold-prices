@@ -38,6 +38,7 @@ export interface CoinsTimeseriesData {
 export interface TimeseriesData {
   dates: string[]
   price_per_gram: number[]
+  bar_price_per_gram?: (number | null)[]
   karats: Record<'24k' | '22k' | '21k' | '18k', number[]>
 }
 
@@ -68,6 +69,7 @@ export const DATA_SOURCE = {
 
 export type SortField = 'date' | '24k' | '22k' | '21k' | '18k'
 export type SortDirection = 'asc' | 'desc'
+export type PriceForm = 'Grains' | 'Bar'
 
 // Shared state across pages. The current price lives in useState so the value
 // fetched while prerendering is shipped with the page.
@@ -80,6 +82,9 @@ const coinsLoaded = ref(false)
 
 const sortField = ref<SortField>('date')
 const sortDirection = ref<SortDirection>('desc')
+
+// Grains/Bar toggle; drives the headline price, chart, trend and all-time high
+const selectedForm = ref<PriceForm>('Grains')
 
 export function useGoldPrices() {
   const currentData = useState<GoldPriceEntry | null>('current-price', () => null)
@@ -161,14 +166,23 @@ export function useGoldPrices() {
 
   const currentPrice = computed(() => currentData.value)
 
+  // Daily prices for the selected form, oldest first
+  const priceSeries = computed(() => {
+    if (!timeseries.value) return null
+    const { price_per_gram, bar_price_per_gram } = timeseries.value
+    if (selectedForm.value === 'Grains' || !bar_price_per_gram) return price_per_gram
+    return bar_price_per_gram.map((p, i) => p ?? price_per_gram[i])
+  })
+
   // Show the current trend relative to where it started: the last peak or low
   // that the price has since moved away from by at least SWING_THRESHOLD.
   // Smaller wiggles don't count as a new move, so a one-day drop is reported
   // as part of the decline from the last real peak rather than "from yesterday".
   const SWING_THRESHOLD = 0.05
   const lastChange = computed(() => {
-    if (!timeseries.value) return null
-    const { dates, price_per_gram: prices } = timeseries.value
+    if (!timeseries.value || !priceSeries.value) return null
+    const { dates } = timeseries.value
+    const prices = priceSeries.value
     const len = prices.length
     if (len < 2) return null
 
@@ -194,24 +208,26 @@ export function useGoldPrices() {
     return { change, changePercent, sinceDate: dates[pivot] }
   })
 
-  // All-time high/low from timeseries
+  // All-time high for the selected form
   const allTimeHigh = computed(() => {
-    if (!timeseries.value) return null
-    const { dates, price_per_gram } = timeseries.value
+    if (!timeseries.value || !priceSeries.value) return null
+    const { dates } = timeseries.value
+    const prices = priceSeries.value
     let maxIdx = 0
-    for (let i = 1; i < price_per_gram.length; i++) {
-      if (price_per_gram[i] > price_per_gram[maxIdx]) maxIdx = i
+    for (let i = 1; i < prices.length; i++) {
+      if (prices[i] > prices[maxIdx]) maxIdx = i
     }
-    return { date: dates[maxIdx], price_per_gram: price_per_gram[maxIdx] }
+    return { date: dates[maxIdx], price_per_gram: prices[maxIdx] }
   })
 
-  // Chart data from timeseries (already chronological, oldest first)
+  // Chart data for the selected form (already chronological, oldest first)
   const chartData = computed(() => {
-    if (!timeseries.value) return { data: [], minVal: 0, maxVal: 0 }
-    const { dates, price_per_gram } = timeseries.value
-    const data = dates.map((date, i) => ({ date, price_per_gram: price_per_gram[i] }))
-    const minVal = Math.floor(Math.min(...price_per_gram) / 500) * 500
-    const maxVal = Math.ceil(Math.max(...price_per_gram) / 500) * 500
+    if (!timeseries.value || !priceSeries.value) return { data: [], minVal: 0, maxVal: 0 }
+    const { dates } = timeseries.value
+    const prices = priceSeries.value
+    const data = dates.map((date, i) => ({ date, price_per_gram: prices[i] }))
+    const minVal = Math.floor(Math.min(...prices) / 500) * 500
+    const maxVal = Math.ceil(Math.max(...prices) / 500) * 500
     return { data, minVal, maxVal }
   })
 
@@ -285,6 +301,7 @@ export function useGoldPrices() {
   return {
     // State
     currentPrice,
+    selectedForm,
     currentCoins,
     coinsTimeseries,
     lastChange,
