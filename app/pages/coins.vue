@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const {
-  coins,
   currentCoins,
+  coinsTimeseries,
   coinsLoaded,
   fetchCoins,
   formatDate,
@@ -25,11 +25,12 @@ const denominations = computed(() => currentCoins.value?.denominations ?? [])
 const activeDenom = computed(() => selectedDenom.value ?? 1000)
 
 const coinChartData = computed(() => {
-  const data = [...coins.value].reverse()
-  const prices = data.map(entry => {
-    const d = entry.denominations.find(dd => dd.denomination === activeDenom.value)
-    return { date: entry.date, price: d?.price ?? 0 }
-  }).filter(d => d.price > 0)
+  if (!coinsTimeseries.value) return { data: [], minVal: 0, maxVal: 0 }
+  const { dates, prices: byDenom } = coinsTimeseries.value
+  const series = byDenom[activeDenom.value] ?? []
+  const prices = dates
+    .map((date, i) => ({ date, price: series[i] ?? 0 }))
+    .filter(d => d.price > 0)
 
   if (prices.length === 0) return { data: [], minVal: 0, maxVal: 0 }
 
@@ -37,6 +38,16 @@ const coinChartData = computed(() => {
   const minVal = Math.floor(Math.min(...allVals) / 10000) * 10000
   const maxVal = Math.ceil(Math.max(...allVals) / 10000) * 10000
   return { data: prices, minVal, maxVal }
+})
+
+// Last 30 days, newest first, one price per current denomination
+const recentPrices = computed(() => {
+  if (!coinsTimeseries.value) return []
+  const { dates, prices: byDenom } = coinsTimeseries.value
+  return dates.slice(-30).reverse().map((date, n) => {
+    const i = dates.length - 1 - n
+    return { date, prices: denominations.value.map(d => byDenom[d.denomination]?.[i] ?? null) }
+  })
 })
 
 const chartWidth = 1000
@@ -243,10 +254,10 @@ const yTicks = computed(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="entry in coins.slice(0, 30)" :key="entry.date">
+            <tr v-for="entry in recentPrices" :key="entry.date">
               <td class="td-date">{{ formatDate(entry.date) }}</td>
-              <td v-for="d in entry.denominations" :key="d.denomination" class="td-price">
-                {{ formatPrice(d.price) }}
+              <td v-for="(price, n) in entry.prices" :key="n" class="td-price">
+                {{ price === null ? '—' : formatPrice(price) }}
               </td>
             </tr>
           </tbody>

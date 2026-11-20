@@ -29,9 +29,16 @@ export interface GoldCoinEntry {
   denominations: CoinDenomination[]
 }
 
+export interface CoinsTimeseriesData {
+  dates: string[]
+  // Prices per denomination, parallel to dates; null when BOM didn't list it
+  prices: Record<string, (number | null)[]>
+}
+
 export interface TimeseriesData {
   dates: string[]
   price_per_gram: number[]
+  karats: Record<'24k' | '22k' | '21k' | '18k', number[]>
 }
 
 export interface YearSummary {
@@ -66,10 +73,9 @@ export type SortDirection = 'asc' | 'desc'
 const currentData = ref<GoldPriceEntry | null>(null)
 const timeseries = ref<TimeseriesData | null>(null)
 const indexData = ref<IndexData | null>(null)
-const prices = ref<GoldPriceEntry[]>([])
-const coins = ref<GoldCoinEntry[]>([])
+const currentCoins = ref<GoldCoinEntry | null>(null)
+const coinsTimeseries = ref<CoinsTimeseriesData | null>(null)
 const coreLoading = ref(true)
-const pricesLoaded = ref(false)
 const coinsLoaded = ref(false)
 
 const sortField = ref<SortField>('date')
@@ -114,32 +120,20 @@ export function useGoldPrices() {
     }
   }
 
-  // Lazy fetch full prices for history table
-  async function fetchPrices() {
-    if (pricesLoaded.value || prices.value.length > 0) return
-    try {
-      const res = await fetch(`${BASE_URL}/prices.json`)
-      if (!res.ok) return
-      const data: GoldPriceEntry[] = await res.json()
-      if (Array.isArray(data) && data.length > 0) {
-        prices.value = data
-        pricesLoaded.value = true
-      }
-    }
-    catch {
-      // Silent failure
-    }
-  }
-
-  // Lazy fetch coins data
+  // Lazy fetch coin data for the coins page (~200 KB)
   async function fetchCoins() {
-    if (coinsLoaded.value || coins.value.length > 0) return
+    if (coinsLoaded.value) return
     try {
-      const res = await fetch(`${BASE_URL}/coins.json`)
-      if (!res.ok) return
-      const data: GoldCoinEntry[] = await res.json()
-      if (Array.isArray(data) && data.length > 0) {
-        coins.value = data
+      const [currentRes, tsRes] = await Promise.all([
+        fetch(`${BASE_URL}/coins-current.json`),
+        fetch(`${BASE_URL}/coins-timeseries.json`),
+      ])
+      if (!currentRes.ok || !tsRes.ok) return
+      const current: GoldCoinEntry = await currentRes.json()
+      const ts: CoinsTimeseriesData = await tsRes.json()
+      if (current?.denominations?.length && ts?.dates?.length) {
+        currentCoins.value = current
+        coinsTimeseries.value = ts
         coinsLoaded.value = true
       }
     }
@@ -149,7 +143,6 @@ export function useGoldPrices() {
   }
 
   const currentPrice = computed(() => currentData.value)
-  const currentCoins = computed(() => coins.value[0] ?? null)
 
   // Show the current trend relative to where it started: the last peak or low
   // that the price has since moved away from by at least SWING_THRESHOLD.
@@ -220,41 +213,26 @@ export function useGoldPrices() {
   const firstDate = computed(() => indexData.value?.first_date ?? '')
   const lastDate = computed(() => indexData.value?.last_date ?? '')
 
-  // Sorted prices for history table
+  // History table rows from the timeseries, sorted by the selected column
   const sortedPrices = computed(() => {
-    if (prices.value.length === 0) return []
-    const result = [...prices.value]
-    result.sort((a, b) => {
-      let aVal: number
-      let bVal: number
-      switch (sortField.value) {
-        case 'date':
-          aVal = new Date(a.date).getTime()
-          bVal = new Date(b.date).getTime()
-          break
-        case '24k':
-          aVal = a.karats['24k']
-          bVal = b.karats['24k']
-          break
-        case '22k':
-          aVal = a.karats['22k']
-          bVal = b.karats['22k']
-          break
-        case '21k':
-          aVal = a.karats['21k']
-          bVal = b.karats['21k']
-          break
-        case '18k':
-          aVal = a.karats['18k']
-          bVal = b.karats['18k']
-          break
-        default:
-          aVal = 0
-          bVal = 0
-      }
-      return sortDirection.value === 'asc' ? aVal - bVal : bVal - aVal
+    if (!timeseries.value) return []
+    const { dates, karats } = timeseries.value
+    const rows = dates.map((date, i) => ({
+      date,
+      karats: {
+        '24k': karats['24k'][i],
+        '22k': karats['22k'][i],
+        '21k': karats['21k'][i],
+        '18k': karats['18k'][i],
+      },
+    }))
+    const key = sortField.value
+    // ISO dates sort correctly as strings
+    rows.sort((a, b) => {
+      const diff = key === 'date' ? a.date.localeCompare(b.date) : a.karats[key] - b.karats[key]
+      return sortDirection.value === 'asc' ? diff : -diff
     })
-    return result
+    return rows
   })
 
   function toggleSort(field: SortField) {
@@ -298,10 +276,9 @@ export function useGoldPrices() {
 
   return {
     // State
-    prices,
-    coins,
     currentPrice,
     currentCoins,
+    coinsTimeseries,
     lastChange,
     allTimeHigh,
     allTimeLow,
@@ -310,7 +287,6 @@ export function useGoldPrices() {
     sortField,
     sortDirection,
     coreLoading,
-    pricesLoaded,
     coinsLoaded,
     totalEntries,
     firstDate,
@@ -319,7 +295,6 @@ export function useGoldPrices() {
     DATA_SOURCE,
     // Actions
     fetchCoreData,
-    fetchPrices,
     fetchCoins,
     toggleSort,
     // Formatters
