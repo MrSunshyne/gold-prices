@@ -4,6 +4,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # The pages are prerendered with the latest price, so rebuild when the
+  # dataset has a newer day. Checks hourly on weekdays, builds only on change.
+  schedule:
+    - cron: "17 * * * 1-5"
+
+env:
+  CURRENT_URL: https://raw.githubusercontent.com/MrSunshyne/mauritius-dataset-gold/main/data/current.json
+  DEPLOYED_DATE_URL: https://gold.ramgolam.com/data-date.txt
 
 permissions:
   contents: read
@@ -12,10 +20,38 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # Queue instead of cancelling, so a scheduled check never cancels a deploy
+  cancel-in-progress: false
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    outputs:
+      build: ${{ steps.compare.outputs.build }}
+    steps:
+      - name: Compare the deployed data date with the dataset
+        id: compare
+        run: |
+          latest=$(curl -sf "$CURRENT_URL" | jq -r .date)
+          deployed=$(curl -sf "$DEPLOYED_DATE_URL" || true)
+          echo "Dataset: $latest, deployed: ${deployed:-unknown}"
+          if [ "$GITHUB_EVENT_NAME" != "schedule" ] || [ "$latest" != "$deployed" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # GitHub disables scheduled workflows after 60 days without repository
+      # activity; re-enabling through the API resets that
+      - name: Keep the schedule enabled
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/deploy.yml/enable"
+
   build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,6 +66,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Record the data date the site is built with
+        run: curl -sf "$CURRENT_URL" | jq -r .date > public/data-date.txt
 
       - name: Generate static site
         run: pnpm nuxt generate

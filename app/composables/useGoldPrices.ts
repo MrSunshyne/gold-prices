@@ -69,8 +69,8 @@ export const DATA_SOURCE = {
 export type SortField = 'date' | '24k' | '22k' | '21k' | '18k'
 export type SortDirection = 'asc' | 'desc'
 
-// Shared state across pages
-const currentData = ref<GoldPriceEntry | null>(null)
+// Shared state across pages. The current price lives in useState so the value
+// fetched while prerendering is shipped with the page.
 const timeseries = ref<TimeseriesData | null>(null)
 const indexData = ref<IndexData | null>(null)
 const currentCoins = ref<GoldCoinEntry | null>(null)
@@ -82,7 +82,24 @@ const sortField = ref<SortField>('date')
 const sortDirection = ref<SortDirection>('desc')
 
 export function useGoldPrices() {
-  // Fetch lightweight files on app startup (~285 KB total)
+  const currentData = useState<GoldPriceEntry | null>('current-price', () => null)
+
+  function isPriceEntry(data: GoldPriceEntry | null | undefined): data is GoldPriceEntry {
+    return !!data?.date && data.price_per_gram != null
+  }
+
+  // Today's price only; run while prerendering so it's in the HTML
+  async function fetchCurrentPrice() {
+    try {
+      const data = await $fetch<GoldPriceEntry>(`${BASE_URL}/current.json`, { responseType: 'json' })
+      if (isPriceEntry(data)) currentData.value = data
+    }
+    catch {
+      // Silent failure
+    }
+  }
+
+  // Fetch lightweight files on app startup (~330 KB total)
   async function fetchCoreData() {
     try {
       const [currentRes, tsRes, indexRes] = await Promise.allSettled([
@@ -93,7 +110,7 @@ export function useGoldPrices() {
 
       if (currentRes.status === 'fulfilled' && currentRes.value.ok) {
         const data = await currentRes.value.json()
-        if (data?.date && data?.price_per_gram != null) {
+        if (isPriceEntry(data)) {
           currentData.value = data
         }
       }
@@ -188,16 +205,6 @@ export function useGoldPrices() {
     return { date: dates[maxIdx], price_per_gram: price_per_gram[maxIdx] }
   })
 
-  const allTimeLow = computed(() => {
-    if (!timeseries.value) return null
-    const { dates, price_per_gram } = timeseries.value
-    let minIdx = 0
-    for (let i = 1; i < price_per_gram.length; i++) {
-      if (price_per_gram[i] < price_per_gram[minIdx]) minIdx = i
-    }
-    return { date: dates[minIdx], price_per_gram: price_per_gram[minIdx] }
-  })
-
   // Chart data from timeseries (already chronological, oldest first)
   const chartData = computed(() => {
     if (!timeseries.value) return { data: [], minVal: 0, maxVal: 0 }
@@ -248,7 +255,8 @@ export function useGoldPrices() {
   function formatDate(dateStr: string): string {
     if (!dateStr) return ''
     const d = new Date(dateStr)
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    // Dates are calendar days; format in UTC so every timezone shows the same day
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
   }
 
   function formatPrice(value: number): string {
@@ -281,7 +289,6 @@ export function useGoldPrices() {
     coinsTimeseries,
     lastChange,
     allTimeHigh,
-    allTimeLow,
     chartData,
     sortedPrices,
     sortField,
@@ -294,6 +301,7 @@ export function useGoldPrices() {
     indexData,
     DATA_SOURCE,
     // Actions
+    fetchCurrentPrice,
     fetchCoreData,
     fetchCoins,
     toggleSort,
