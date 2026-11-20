@@ -155,15 +155,35 @@ const yLabelPositions = computed(() => {
   }))
 })
 
+const MAX_X_LABELS = 5
+
 const xLabelPositions = computed(() => {
   const { data } = filteredChartData.value
   if (data.length < 2) return []
-  const step = Math.floor(data.length / 4)
-  return data
-    .filter((_, idx) => idx % step === 0)
-    .map(d => ({
-      label: new Date(d.date).getFullYear(),
-      left: (xScale(data.indexOf(d), data.length) / chartWidth) * 100,
+
+  // Label by the unit that changes a few times across the visible range:
+  // days for 1M, months for 1Y, years for longer ranges
+  const spanDays = (Date.parse(data[data.length - 1].date) - Date.parse(data[0].date)) / 86_400_000
+  const unit = spanDays <= 62 ? 'day' : spanDays <= 731 ? 'month' : 'year'
+  const period = (date: string) => unit === 'day' ? date : unit === 'month' ? date.slice(0, 7) : date.slice(0, 4)
+  const format = (date: string) => unit === 'year'
+    ? date.slice(0, 4)
+    : new Date(date).toLocaleDateString('en-GB', unit === 'day'
+        ? { day: 'numeric', month: 'short', timeZone: 'UTC' }
+        : { month: 'short', year: 'numeric', timeZone: 'UTC' })
+
+  // First data point of each period; the range's own start is a partial period
+  const starts: number[] = []
+  for (let i = 1; i < data.length; i++) {
+    if (period(data[i].date) !== period(data[i - 1].date)) starts.push(i)
+  }
+  const step = Math.ceil(starts.length / MAX_X_LABELS)
+
+  return starts
+    .filter((_, n) => n % step === 0)
+    .map(i => ({
+      label: format(data[i].date),
+      left: (xScale(i, data.length) / chartWidth) * 100,
     }))
 })
 
