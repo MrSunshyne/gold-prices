@@ -11,6 +11,7 @@ const {
   firstDate,
   lastDate,
   timeAgo,
+  historyCsv,
 } = useGoldPrices()
 
 useHead({
@@ -20,6 +21,15 @@ useHead({
 function sortIndicator(field: string): string {
   if (sortField.value !== field) return ''
   return sortDirection.value === 'asc' ? ' \u2191' : ' \u2193'
+}
+
+function downloadCsv() {
+  const url = URL.createObjectURL(new Blob([historyCsv()], { type: 'text/csv' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `mauritius-gold-prices-${lastDate.value}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 </script>
 
@@ -57,7 +67,10 @@ function sortIndicator(field: string): string {
     <section class="table-section">
       <div v-if="coreLoading" class="loading">Loading price history...</div>
       <template v-else>
-      <h3 class="section-heading">Detailed Valuations</h3>
+      <div class="section-heading table-heading">
+        <h3>Detailed Valuations</h3>
+        <button class="csv-button" @click="downloadCsv">Download CSV</button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -142,6 +155,36 @@ function sortIndicator(field: string): string {
   margin-bottom: 24px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 16px;
+}
+
+.table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.table-heading h3 {
+  font: inherit;
+  color: inherit;
+}
+
+.csv-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.csv-button:hover {
+  border-color: var(--gold-color);
+  color: var(--text);
 }
 
 .data-split {
