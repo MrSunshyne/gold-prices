@@ -6,8 +6,7 @@ const {
   toggleSort,
   formatDate,
   formatPrice,
-  pricesLoaded,
-  fetchPrices,
+  coreLoading,
   totalEntries,
   firstDate,
   lastDate,
@@ -16,10 +15,6 @@ const {
 
 useHead({
   title: 'Mauritius Gold Price Index — Price History',
-})
-
-onMounted(() => {
-  fetchPrices()
 })
 
 function sortIndicator(field: string): string {
@@ -60,7 +55,7 @@ function sortIndicator(field: string): string {
     </div>
 
     <section class="table-section">
-      <div v-if="!pricesLoaded" class="loading">Loading price history...</div>
+      <div v-if="coreLoading" class="loading">Loading price history...</div>
       <template v-else>
       <h3 class="section-heading">Detailed Valuations</h3>
       <div class="table-wrap">

@@ -9,7 +9,6 @@ const {
   formatPrice,
   formatPriceShort,
   timeAgo,
-  prices,
 } = useGoldPrices()
 
 const selectedForm = ref<'Grains' | 'Bar'>('Grains')
