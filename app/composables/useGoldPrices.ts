@@ -298,6 +298,21 @@ export function useGoldPrices() {
     }
   }
 
+  // Full daily history as CSV, oldest first
+  function historyCsv(): string {
+    if (!timeseries.value) return ''
+    const { dates, price_per_gram, bar_price_per_gram, karats } = timeseries.value
+    const rows = dates.map((date, i) => [
+      date,
+      price_per_gram[i],
+      bar_price_per_gram?.[i] ?? '',
+      karats['22k'][i],
+      karats['21k'][i],
+      karats['18k'][i],
+    ].join(','))
+    return ['date,grains_24k_per_gram,bar_24k_per_gram,22k_per_gram,21k_per_gram,18k_per_gram', ...rows].join('\n') + '\n'
+  }
+
   function formatDate(dateStr: string): string {
     if (!dateStr) return ''
     const d = new Date(dateStr)
@@ -344,6 +359,7 @@ export function useGoldPrices() {
     coinsLoaded,
     international,
     grainsPriceOn,
+    historyCsv,
     totalEntries,
     firstDate,
     lastDate,
