@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const {
   currentPrice,
+  selectedForm,
   lastChange,
   allTimeHigh,
   chartData,
@@ -9,8 +10,6 @@ const {
   formatPriceShort,
   timeAgo,
 } = useGoldPrices()
-
-const selectedForm = ref<'Grains' | 'Bar'>('Grains')
 
 const displayPrice = computed(() => {
   if (!currentPrice.value) return null
@@ -260,7 +259,7 @@ const hoveredEntry = computed(() => {
           <div class="panel-header">
             <div class="panel-title-group">
               <h3>Historical Valuation</h3>
-              <p>24K Gold Price Trajectory</p>
+              <p>24K Gold Price Trajectory — {{ selectedForm }}</p>
             </div>
             <div class="range-switcher">
               <button
