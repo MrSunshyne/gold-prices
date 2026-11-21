@@ -27,6 +27,9 @@ export default defineNuxtConfig({
         { name: 'twitter:description', content: 'Daily gold prices in Mauritius since 2004. Interactive charts and Dodo Gold Coin pricing.' },
         { name: 'twitter:image', content: 'https://gold.ramgolam.com/og-image.png' },
       ],
+      script: [
+        { src: 'https://gc.zgo.at/count.js', async: true, 'data-goatcounter': 'https://gold-prices-mauritius.goatcounter.com/count' },
+      ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
