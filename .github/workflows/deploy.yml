@@ -56,13 +56,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v6
+
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
-
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 9
+          node-version: 24
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -71,7 +70,7 @@ jobs:
         run: curl -sf "$CURRENT_URL" | jq -r .date > public/data-date.txt
 
       - name: Generate static site
-        run: pnpm nuxt generate
+        run: pnpm run generate
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
